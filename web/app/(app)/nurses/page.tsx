@@ -40,14 +40,43 @@ export default function NursesPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["nurses"] }); setEditing(null); },
   });
 
+  // 인라인 빠른 수정용 (모달 닫기 안 함)
+  const inlinePatch = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: Partial<Nurse> }) =>
+      apiFetch<Nurse>(`/nurses/${id}`, { method: "PATCH", body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["nurses"] }),
+  });
+  // 어떤 row가 inline 저장 중인지 시각화 (작은 spinner)
+  const [savingId, setSavingId] = useState<number | null>(null);
+  function patchInline(id: number, body: Partial<Nurse>) {
+    setSavingId(id);
+    inlinePatch.mutate(
+      { id, body },
+      { onSettled: () => setSavingId((v) => (v === id ? null : v)) },
+    );
+  }
+
   if (nurses.isLoading) return <Spinner size={6} />;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">간호사 명단</h1>
+        <div>
+          <h1 className="text-2xl font-bold">간호사 명단</h1>
+          {isHead && (
+            <p className="text-xs text-gray-500 mt-1">
+              테이블의 등급·고정 패턴·활성 셀을 클릭하면 즉시 저장됩니다. 이름·이메일·입사일 등은 "편집" 버튼을 이용하세요.
+            </p>
+          )}
+        </div>
         {isHead && <Button onClick={() => setEditing("new")}>+ 추가</Button>}
       </div>
+
+      {inlinePatch.error && (
+        <div className="bg-red-50 border border-red-200 rounded px-3 py-2 text-sm text-red-800">
+          저장 실패: {(inlinePatch.error as Error).message}
+        </div>
+      )}
 
       <div className="bg-white border rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
@@ -76,15 +105,79 @@ export default function NursesPage() {
                 <td className="px-3 py-2">
                   {n.role === "head_nurse" ? <Badge variant="info">수간호사</Badge> : "팀원"}
                 </td>
-                <td className="px-3 py-2 text-gray-600">{n.hire_date ?? "-"}</td>
+                <td className="px-3 py-2 text-gray-600">{n.hire_date?.slice(0, 10) ?? "-"}</td>
+
+                {/* 등급 — inline select */}
                 <td className="px-3 py-2">
-                  <span className="font-mono text-xs">{n.resolved_level ?? "-"}</span>
-                  {!n.experience_level_override && <span className="text-xs text-gray-400 ml-1">(미지정)</span>}
+                  {isHead ? (
+                    <select
+                      className="text-xs font-mono rounded border border-gray-200 px-1.5 py-0.5 bg-white hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={n.experience_level_override ?? ""}
+                      onChange={(e) =>
+                        patchInline(n.id, { experience_level_override: e.target.value || null })
+                      }
+                      disabled={savingId === n.id}
+                    >
+                      <option value="">— 미지정</option>
+                      {(levels.data ?? []).map((l) => (
+                        <option key={l.code} value={l.code}>
+                          {l.code} · {l.display_name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="font-mono text-xs">
+                      {n.resolved_level ?? "-"}
+                      {!n.experience_level_override && (
+                        <span className="text-gray-400 ml-1">(미지정)</span>
+                      )}
+                    </span>
+                  )}
                 </td>
-                <td className="px-3 py-2 text-xs">{n.fixed_shift_pattern ?? "-"}</td>
-                <td className="px-3 py-2">{n.active ? "✅" : <span className="text-gray-400">비활성</span>}</td>
+
+                {/* 고정 패턴 — inline select */}
+                <td className="px-3 py-2">
+                  {isHead ? (
+                    <select
+                      className="text-xs rounded border border-gray-200 px-1.5 py-0.5 bg-white hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={n.fixed_shift_pattern ?? ""}
+                      onChange={(e) =>
+                        patchInline(n.id, {
+                          fixed_shift_pattern: (e.target.value || null) as FixedPattern | null,
+                        })
+                      }
+                      disabled={savingId === n.id}
+                    >
+                      {FIXED_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-xs">{n.fixed_shift_pattern ?? "-"}</span>
+                  )}
+                </td>
+
+                {/* 활성 — 클릭 토글 */}
+                <td className="px-3 py-2">
+                  {isHead ? (
+                    <button
+                      onClick={() => patchInline(n.id, { active: !n.active })}
+                      disabled={savingId === n.id || isMe} // 본인 비활성화 방지
+                      title={isMe ? "본인 계정은 비활성화 불가" : n.active ? "비활성화" : "다시 활성화"}
+                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {n.active ? (
+                        <span className="text-green-700">✅ 활성</span>
+                      ) : (
+                        <span className="text-gray-400">⏸ 비활성</span>
+                      )}
+                    </button>
+                  ) : n.active ? "✅" : <span className="text-gray-400">비활성</span>}
+                </td>
+
                 {isHead && (
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                    {savingId === n.id && <span className="text-[11px] text-gray-400 mr-2">저장 중…</span>}
                     <Button variant="ghost" size="sm" onClick={() => setEditing(n)}>편집</Button>
                   </td>
                 )}
