@@ -51,7 +51,7 @@ export function Nav() {
           {me && (
             <>
               <span className="text-sm text-gray-600">{me.em}</span>
-              {me.rl === "head_nurse" && <Badge variant="info">수간호사</Badge>}
+              {me.rl === "head_nurse" && <Badge variant="info">매니저</Badge>}
               <Button variant="ghost" size="sm" onClick={() => logout.mutate()}>
                 로그아웃
               </Button>

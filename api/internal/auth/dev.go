@@ -54,8 +54,18 @@ func (h *Handler) DevLogin(w http.ResponseWriter, r *http.Request) {
 	sub, err := h.upsertNurseByEmail(r.Context(), user)
 	if err != nil {
 		if err == errNotInvited {
-			apierr.Write(w, http.StatusForbidden, apierr.CodeNotInvited,
-				"이 이메일은 등록되지 않았습니다. ADMIN_EMAIL과 일치하거나 head_nurse가 nurses에 추가해야 합니다.")
+			// Stage 2: dev-login도 pending 큐에 저장 (매니저 매칭 흐름 테스트)
+			_ = SavePending(r.Context(), h.Redis, &PendingAccount{
+				Email:     user.Email,
+				GoogleSub: user.Sub,
+				Name:      user.Name,
+				Picture:   user.Picture,
+			})
+			apierr.WriteFull(w, http.StatusForbidden, &apierr.Error{
+				Code:    "PENDING_APPROVAL",
+				Message: "매니저가 명단에 연결할 때까지 대기 중입니다.",
+				Details: map[string]any{"email": user.Email},
+			})
 			return
 		}
 		apierr.Write(w, http.StatusInternalServerError, apierr.CodeInternal, err.Error())

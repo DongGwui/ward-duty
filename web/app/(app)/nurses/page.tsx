@@ -8,6 +8,14 @@ import { Badge } from "@/components/ui/Badge";
 import { Spinner } from "@/components/ui/Spinner";
 import type { Nurse, Level, Subject, FixedPattern } from "@/lib/types";
 
+interface PendingAccount {
+  email: string;
+  google_sub: string;
+  name?: string;
+  picture?: string;
+  created_at: string;
+}
+
 const FIXED_OPTIONS: { value: FixedPattern | ""; label: string }[] = [
   { value: "", label: "일반 로테이션" },
   { value: "D_ONLY", label: "D 전담" },
@@ -56,10 +64,57 @@ export default function NursesPage() {
     );
   }
 
+  // Stage 2: pending OAuth 계정 (매니저만)
+  const pending = useQuery<PendingAccount[]>({
+    queryKey: ["pending-accounts"],
+    queryFn: () => apiFetch<PendingAccount[]>("/pending-accounts"),
+    enabled: isHead,
+    refetchInterval: 15_000, // 15초마다 자동 폴링
+  });
+  const linkAccount = useMutation({
+    mutationFn: ({ nurseId, email }: { nurseId: number; email: string }) =>
+      apiFetch(`/nurses/${nurseId}/link-account`, { method: "POST", body: { email } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pending-accounts"] });
+      qc.invalidateQueries({ queryKey: ["nurses"] });
+    },
+  });
+  const dismissPending = useMutation({
+    mutationFn: (email: string) => apiFetch(`/pending-accounts/${encodeURIComponent(email)}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pending-accounts"] }),
+  });
+
   if (nurses.isLoading) return <Spinner size={6} />;
 
   return (
     <div className="space-y-4">
+      {/* Stage 2: pending 매칭 섹션 */}
+      {isHead && (pending.data ?? []).length > 0 && (
+        <section className="bg-yellow-50 border border-yellow-300 rounded-xl overflow-hidden">
+          <header className="px-5 py-3 border-b border-yellow-200 bg-yellow-100/50">
+            <h2 className="font-semibold text-yellow-900 flex items-center gap-2">
+              🔔 계정 연결 대기
+              <Badge variant="warning">{pending.data!.length}</Badge>
+            </h2>
+            <p className="text-xs text-yellow-800 mt-1">
+              Google 로그인을 시도했지만 명단에 없는 사용자입니다. 어느 nurse 행에 연결할지 선택하세요.
+            </p>
+          </header>
+          <div className="p-4 space-y-3">
+            {pending.data!.map((p) => (
+              <PendingCard
+                key={p.email}
+                p={p}
+                nurses={(nurses.data ?? []).filter((n) => !n.email)}
+                onLink={(nurseId) => linkAccount.mutate({ nurseId, email: p.email })}
+                onDismiss={() => dismissPending.mutate(p.email)}
+                submitting={linkAccount.isPending || dismissPending.isPending}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">간호사 명단</h1>
@@ -109,7 +164,7 @@ export default function NursesPage() {
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  {n.role === "head_nurse" ? <Badge variant="info">수간호사</Badge> : "팀원"}
+                  {n.role === "head_nurse" ? <Badge variant="info">매니저</Badge> : "팀원"}
                 </td>
                 <td className="px-3 py-2 text-gray-600">{n.hire_date?.slice(0, 10) ?? "-"}</td>
 
@@ -242,7 +297,7 @@ function NurseEditor({ nurse, levels, onClose, onSubmit, submitting }: {
           />
           {isNew ? (
             <p className="text-xs text-gray-500 mt-1">
-              비워두면 듀티 명단에만 추가됩니다 (계정 미연결). 이후 Google 로그인 시 수간호사가 매칭해 줍니다.
+              비워두면 듀티 명단에만 추가됩니다 (계정 미연결). 이후 Google 로그인 시 매니저가 매칭해 줍니다.
             </p>
           ) : (
             <p className="text-xs text-gray-500 mt-1">이메일은 수정 불가 — 신규 추가로 처리하세요.</p>
@@ -251,7 +306,7 @@ function NurseEditor({ nurse, levels, onClose, onSubmit, submitting }: {
         <Field label="역할">
           <select className="input" value={form.role ?? "nurse"} onChange={(e) => setForm({ ...form, role: e.target.value as Nurse["role"] })}>
             <option value="nurse">팀원</option>
-            <option value="head_nurse">수간호사</option>
+            <option value="head_nurse">매니저</option>
           </select>
         </Field>
         <Field label="입사일 (참고용)">
@@ -298,5 +353,77 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="block text-xs text-gray-600 mb-1">{label}</span>
       {children}
     </label>
+  );
+}
+
+// ============================================================
+// Stage 2: PendingCard — pending OAuth 계정 매칭
+// ============================================================
+
+function PendingCard({
+  p,
+  nurses,
+  onLink,
+  onDismiss,
+  submitting,
+}: {
+  p: PendingAccount;
+  nurses: Nurse[]; // email이 비어있는 (= 미연결) nurse 후보
+  onLink: (nurseId: number) => void;
+  onDismiss: () => void;
+  submitting: boolean;
+}) {
+  const [selectedNurseId, setSelectedNurseId] = useState<number | "">("");
+  return (
+    <article className="bg-white border border-yellow-200 rounded-lg p-4">
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+        <div className="flex items-center gap-3">
+          {p.picture && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.picture} alt="" className="w-8 h-8 rounded-full" />
+          )}
+          <div>
+            <div className="font-medium">{p.name || p.email}</div>
+            <div className="text-xs text-gray-500 font-mono">{p.email}</div>
+          </div>
+        </div>
+        <span className="text-[11px] text-gray-400">
+          {new Date(p.created_at).toLocaleString()}
+        </span>
+      </div>
+
+      <div className="grid sm:grid-cols-[1fr_auto_auto] gap-2 items-center">
+        <select
+          className="input"
+          value={selectedNurseId}
+          onChange={(e) => setSelectedNurseId(e.target.value ? Number(e.target.value) : "")}
+        >
+          <option value="">연결할 명단 선택…</option>
+          {nurses.length === 0 ? (
+            <option disabled value="">미연결 nurse 없음 — 먼저 + 추가</option>
+          ) : (
+            nurses.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name} {n.resolved_level ? `(${n.resolved_level})` : ""}
+              </option>
+            ))
+          )}
+        </select>
+        <Button
+          size="sm"
+          onClick={() => selectedNurseId && onLink(selectedNurseId)}
+          disabled={!selectedNurseId || submitting}
+        >
+          연결
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onDismiss} disabled={submitting}>
+          거부
+        </Button>
+      </div>
+
+      <p className="text-[11px] text-gray-500 mt-2">
+        연결 후 사용자가 다시 Google 로그인하면 해당 nurse로 접속할 수 있습니다.
+      </p>
+    </article>
   );
 }

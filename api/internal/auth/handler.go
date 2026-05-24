@@ -54,8 +54,18 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	sub, err := h.upsertNurseByEmail(ctx, user)
 	if err != nil {
 		if errors.Is(err, errNotInvited) {
-			apierr.Write(w, http.StatusForbidden, apierr.CodeNotInvited,
-				"초대받지 않은 이메일입니다. 수간호사에게 등록을 요청하세요.")
+			// Stage 2: pending Redis에 저장 + /login?pending=1&email=... 로 리다이렉트
+			_ = SavePending(ctx, h.Redis, &PendingAccount{
+				Email:     user.Email,
+				GoogleSub: user.Sub,
+				Name:      user.Name,
+				Picture:   user.Picture,
+			})
+			target := frontPath() + "?" + PendingRedirectQuery(user.Email)
+			if frontPath() == "/" {
+				target = "/login?" + PendingRedirectQuery(user.Email)
+			}
+			http.Redirect(w, r, target, http.StatusFound)
 			return
 		}
 		apierr.Write(w, http.StatusInternalServerError, apierr.CodeInternal, err.Error())

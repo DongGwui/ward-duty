@@ -1,11 +1,15 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch, loginUrl } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 
 export default function LoginPage() {
+  const sp = useSearchParams();
+  const pending = sp.get("pending") === "1";
+  const pendingEmail = sp.get("email") ?? "";
+
   // 로컬 개발 모드 — .env.local에 NEXT_PUBLIC_DEV_LOGIN=1
   const devMode = process.env.NEXT_PUBLIC_DEV_LOGIN === "1";
   const router = useRouter();
@@ -22,8 +26,13 @@ export default function LoginPage() {
       await qc.invalidateQueries({ queryKey: ["me"] });
       router.replace("/");
     } catch (e: unknown) {
-      const msg = (e as { body?: { message?: string } })?.body?.message ?? "로그인 실패";
-      setError(msg);
+      const err = e as { status?: number; body?: { code?: string; message?: string } };
+      if (err.body?.code === "PENDING_APPROVAL") {
+        // Stage 2: 매니저 매칭 대기
+        router.replace(`/login?pending=1&email=${encodeURIComponent(email)}`);
+        return;
+      }
+      setError(err.body?.message ?? "로그인 실패");
     } finally {
       setLoading(false);
     }
@@ -36,8 +45,19 @@ export default function LoginPage() {
         <p className="text-sm text-gray-600 mb-6 text-center">
           간호사 듀티 자동 생성 도구.
           <br />
-          수간호사가 등록한 이메일로만 로그인할 수 있습니다.
+          매니저가 등록한 이메일로만 로그인할 수 있습니다.
         </p>
+
+        {pending && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-sm">
+            <div className="font-semibold text-yellow-900">매니저 승인 대기</div>
+            <p className="text-yellow-800 mt-1 text-xs">
+              {pendingEmail && <span className="font-mono">{pendingEmail}</span>}
+              {pendingEmail && " "}계정이 명단에 연결될 때까지 잠시 기다려주세요. 매니저가
+              명단에서 본인을 연결해 주면 다시 로그인할 수 있습니다.
+            </p>
+          </div>
+        )}
 
         <a
           href={loginUrl()}

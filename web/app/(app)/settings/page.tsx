@@ -83,7 +83,7 @@ export default function SettingsPage() {
           </Button>
         )}
       </div>
-      {!isHead && <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">조회 전용 — 수간호사만 수정 가능</p>}
+      {!isHead && <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">조회 전용 — 매니저만 수정 가능</p>}
 
       {GROUPS.map((g) => (
         <section key={g.title} className="bg-white border rounded-xl p-5">

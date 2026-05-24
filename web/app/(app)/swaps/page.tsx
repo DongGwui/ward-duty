@@ -20,10 +20,10 @@ interface SwapRequest {
 
 const STATUS_LABEL: Record<SwapStatus, string> = {
   pending: "대기 중",
-  b_accepted: "수락됨 · 수간호사 승인 대기",
+  b_accepted: "수락됨 · 매니저 승인 대기",
   approved: "승인 완료",
   rejected_by_b: "상대 거부",
-  rejected_by_head: "수간호사 거부",
+  rejected_by_head: "매니저 거부",
   cancelled: "취소됨",
 };
 const STATUS_VARIANT: Record<SwapStatus, "default" | "warning" | "success" | "danger" | "info"> = {
@@ -88,7 +88,7 @@ export default function SwapsPage() {
         <div>
           <h1 className="text-2xl font-bold">근무 교환</h1>
           <p className="text-sm text-gray-600 mt-1 max-w-xl">
-            근무를 다른 간호사와 바꿔야 할 때 사용합니다. <b>요청</b> → <b>상대 수락</b> → <b>수간호사 승인</b> 순서로 진행됩니다.
+            근무를 다른 간호사와 바꿔야 할 때 사용합니다. <b>요청</b> → <b>상대 수락</b> → <b>매니저 승인</b> 순서로 진행됩니다.
           </p>
         </div>
         <Button onClick={() => setCreating(true)} className="shrink-0">
@@ -125,7 +125,7 @@ export default function SwapsPage() {
       {isHead && (
         <SwapSection
           title="승인 대기"
-          subtitle="수간호사"
+          subtitle="매니저"
           icon="✅"
           accent="info"
           items={pendingApproval.data}

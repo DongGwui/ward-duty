@@ -142,6 +142,10 @@ func main() {
 				hh.Use(auth.RequireRole("head_nurse"))
 				hh.Post("/nurses", nursesH.Create)
 				hh.Patch("/nurses/{id}", nursesH.Update)
+				// Stage 2 — pending OAuth 계정 매칭
+				hh.Get("/pending-accounts", authH.ListPending)
+				hh.Delete("/pending-accounts/{email}", authH.DismissPending)
+				hh.Post("/nurses/{id}/link-account", authH.LinkAccount)
 
 				hh.Post("/levels", levelsH.Create)
 				hh.Patch("/levels/{code}", levelsH.Update)
