@@ -2,21 +2,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Bell } from "lucide-react";
 import { apiFetch, apiFetchFull } from "@/lib/api";
+import { getNotifIcon } from "@/components/notifications/icons";
 import type { Notification } from "@/lib/types";
 import clsx from "clsx";
-
-const TYPE_ICON: Record<string, string> = {
-  account_pending_approval: "🔔",
-  swap_request_received: "📥",
-  swap_b_accepted: "🤝",
-  swap_approved: "✅",
-  swap_rejected: "❌",
-  level_changed: "🏷️",
-  fixed_pattern_changed: "🔧",
-  nightkeeper_assigned: "🌙",
-  schedule_confirmed: "📅",
-};
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -70,7 +60,7 @@ export function NotificationBell() {
         className="relative w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition"
         aria-label="알림"
       >
-        <span className="text-lg">🔔</span>
+        <Bell size={20} strokeWidth={1.75} className="text-gray-700" />
         {unread > 0 && (
           <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
             {unread > 9 ? "9+" : unread}
@@ -107,7 +97,9 @@ export function NotificationBell() {
             {!list.isLoading && (list.data?.data?.length ?? 0) === 0 && (
               <div className="p-6 text-center text-sm text-gray-400">알림이 없습니다.</div>
             )}
-            {(list.data?.data ?? []).map((n) => (
+            {(list.data?.data ?? []).map((n) => {
+              const { Icon, color } = getNotifIcon(n.type);
+              return (
               <button
                 key={n.id}
                 onClick={() => onClickItem(n)}
@@ -116,7 +108,7 @@ export function NotificationBell() {
                   !n.read_at && "bg-blue-50/40",
                 )}
               >
-                <span className="text-base mt-0.5">{TYPE_ICON[n.type] ?? "📌"}</span>
+                <Icon size={18} strokeWidth={1.75} className={clsx("mt-0.5 shrink-0", color)} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-medium text-sm truncate">{n.title}</div>
@@ -126,7 +118,8 @@ export function NotificationBell() {
                   <div className="text-[10px] text-gray-400 mt-1">{relativeTime(n.created_at)}</div>
                 </div>
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

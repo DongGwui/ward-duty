@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Inbox } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -73,7 +74,7 @@ export default function AccountLinkPage() {
 
       {items.length === 0 ? (
         <div className="bg-white border rounded-xl py-16 text-center">
-          <div className="text-4xl opacity-30 mb-2">📭</div>
+          <Inbox size={32} strokeWidth={1.5} className="mx-auto text-gray-300 mb-2" />
           <p className="text-sm text-gray-500">대기 중인 계정 연결 요청이 없습니다.</p>
         </div>
       ) : (

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, PauseCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -173,12 +174,12 @@ export default function NursesPage() {
                       className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {n.active ? (
-                        <span className="text-green-700">✅ 활성</span>
+                        <span className="text-green-700 inline-flex items-center gap-1"><CheckCircle2 size={14} strokeWidth={2} /> 활성</span>
                       ) : (
-                        <span className="text-gray-400">⏸ 비활성</span>
+                        <span className="text-gray-400 inline-flex items-center gap-1"><PauseCircle size={14} strokeWidth={2} /> 비활성</span>
                       )}
                     </button>
-                  ) : n.active ? "✅" : <span className="text-gray-400">비활성</span>}
+                  ) : n.active ? <CheckCircle2 size={16} strokeWidth={2} className="text-green-700" /> : <span className="text-gray-400">비활성</span>}
                 </td>
 
                 {isHead && (

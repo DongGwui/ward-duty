@@ -1,6 +1,7 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Inbox, Send, ShieldCheck } from "lucide-react";
 import { apiFetch, ApiException } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -100,7 +101,7 @@ export default function SwapsPage() {
 
       <SwapSection
         title="받은 요청"
-        icon="📥"
+        icon={<Inbox size={18} strokeWidth={1.75} className="text-amber-600" />}
         accent="warning"
         items={inbox.data}
         emptyText="다른 간호사가 나에게 보낸 교환 요청이 여기 표시됩니다."
@@ -112,7 +113,7 @@ export default function SwapsPage() {
 
       <SwapSection
         title="보낸 요청"
-        icon="📤"
+        icon={<Send size={18} strokeWidth={1.75} className="text-gray-500" />}
         accent="default"
         items={sent.data}
         emptyText="내가 보낸 교환 요청이 여기 표시됩니다. 우상단 “+ 새 요청”으로 시작하세요."
@@ -126,7 +127,7 @@ export default function SwapsPage() {
         <SwapSection
           title="승인 대기"
           subtitle="매니저"
-          icon="✅"
+          icon={<ShieldCheck size={18} strokeWidth={1.75} className="text-blue-600" />}
           accent="info"
           items={pendingApproval.data}
           emptyText="양 당사자가 수락한 교환이 여기서 최종 승인을 기다립니다. 승인 시 X-03 규칙 검증이 자동 실행됩니다."
@@ -159,7 +160,7 @@ export default function SwapsPage() {
 interface SectionProps {
   title: string;
   subtitle?: string;
-  icon: string;
+  icon: ReactNode;
   accent: "warning" | "info" | "default";
   items?: SwapRequest[];
   emptyText: string;
@@ -178,7 +179,7 @@ function SwapSection({ title, subtitle, icon, accent, items, emptyText, kind, nM
       <header className="flex items-center gap-3 px-5 py-3 border-b bg-gray-50/50">
         <div className={clsx("w-1 h-6 rounded", accentBar)} />
         <div className="flex items-baseline gap-2">
-          <span className="text-lg">{icon}</span>
+          <span className="inline-flex">{icon}</span>
           <h2 className="font-semibold">{title}</h2>
           {subtitle && <span className="text-xs text-gray-500">({subtitle})</span>}
         </div>
@@ -190,7 +191,7 @@ function SwapSection({ title, subtitle, icon, accent, items, emptyText, kind, nM
       <div className="p-5">
         {count === 0 ? (
           <div className="text-center py-8">
-            <div className="text-3xl mb-2 opacity-50">{icon}</div>
+            <div className="mb-2 opacity-40 flex justify-center [&>svg]:w-8 [&>svg]:h-8">{icon}</div>
             <p className="text-sm text-gray-500 max-w-md mx-auto">{emptyText}</p>
           </div>
         ) : (

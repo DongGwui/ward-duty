@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Moon } from "lucide-react";
 import { apiFetch, ApiException } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -100,7 +101,10 @@ export default function NightKeepersPage() {
                           const isMine = a.nurse_id === me?.nid;
                           return (
                             <Badge key={a.id} variant={isMine ? "info" : "default"} className="flex items-center gap-1">
-                              <span>🌙 {n?.name ?? `#${a.nurse_id}`}{isMine && " (나)"}</span>
+                              <span className="inline-flex items-center gap-1">
+                                <Moon size={12} strokeWidth={2} className="text-indigo-600" />
+                                {n?.name ?? `#${a.nurse_id}`}{isMine && " (나)"}
+                              </span>
                               {isHead && (
                                 <button
                                   className="text-blue-600 hover:text-blue-800 -mr-1 ml-1"

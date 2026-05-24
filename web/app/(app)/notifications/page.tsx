@@ -1,23 +1,13 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { BellOff, X } from "lucide-react";
 import { apiFetch, apiFetchFull } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
+import { getNotifIcon } from "@/components/notifications/icons";
 import type { Notification } from "@/lib/types";
 import clsx from "clsx";
-
-const TYPE_ICON: Record<string, string> = {
-  account_pending_approval: "🔔",
-  swap_request_received: "📥",
-  swap_b_accepted: "🤝",
-  swap_approved: "✅",
-  swap_rejected: "❌",
-  level_changed: "🏷️",
-  fixed_pattern_changed: "🔧",
-  nightkeeper_assigned: "🌙",
-  schedule_confirmed: "📅",
-};
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -68,12 +58,14 @@ export default function NotificationsPage() {
 
       {items.length === 0 ? (
         <div className="bg-white border rounded-xl py-16 text-center">
-          <div className="text-4xl opacity-30 mb-2">🔕</div>
+          <BellOff size={32} strokeWidth={1.5} className="mx-auto text-gray-300 mb-2" />
           <p className="text-sm text-gray-500">알림이 없습니다.</p>
         </div>
       ) : (
         <div className="bg-white border rounded-xl divide-y">
-          {items.map((n) => (
+          {items.map((n) => {
+            const { Icon, color } = getNotifIcon(n.type);
+            return (
             <div
               key={n.id}
               className={clsx(
@@ -81,7 +73,7 @@ export default function NotificationsPage() {
                 !n.read_at && "bg-blue-50/40",
               )}
             >
-              <span className="text-xl mt-0.5">{TYPE_ICON[n.type] ?? "📌"}</span>
+              <Icon size={20} strokeWidth={1.75} className={clsx("mt-0.5 shrink-0", color)} />
               <button onClick={() => onClickItem(n)} className="flex-1 min-w-0 text-left hover:bg-gray-50 -mx-1 px-1 rounded">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{n.title}</span>
@@ -92,13 +84,14 @@ export default function NotificationsPage() {
               </button>
               <button
                 onClick={() => del.mutate(n.id)}
-                className="text-gray-300 hover:text-red-500 text-sm self-start px-1"
+                className="text-gray-300 hover:text-red-500 self-start p-1 rounded"
                 title="삭제"
               >
-                ✕
+                <X size={16} strokeWidth={2} />
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
