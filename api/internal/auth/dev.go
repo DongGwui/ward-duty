@@ -54,13 +54,14 @@ func (h *Handler) DevLogin(w http.ResponseWriter, r *http.Request) {
 	sub, err := h.upsertNurseByEmail(r.Context(), user)
 	if err != nil {
 		if err == errNotInvited {
-			// Stage 2: dev-login도 pending 큐에 저장 (매니저 매칭 흐름 테스트)
+			// Stage 2: dev-login도 pending 큐에 저장 + 매니저 알림
 			_ = SavePending(r.Context(), h.Redis, &PendingAccount{
 				Email:     user.Email,
 				GoogleSub: user.Sub,
 				Name:      user.Name,
 				Picture:   user.Picture,
 			})
+			FirePendingHook(r.Context(), user.Email, user.Name)
 			apierr.WriteFull(w, http.StatusForbidden, &apierr.Error{
 				Code:    "PENDING_APPROVAL",
 				Message: "매니저가 명단에 연결할 때까지 대기 중입니다.",

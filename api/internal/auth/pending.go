@@ -49,6 +49,22 @@ func SavePending(ctx context.Context, rc *redis.Client, p *PendingAccount) error
 	return err
 }
 
+// NotifyHook — handler가 매니저들에게 알림 보낼 때 호출하는 콜백 시그니처.
+// (auth 패키지가 notifications 패키지를 import하면 순환 위험이 있어 함수 주입 패턴.)
+type NotifyHook func(ctx context.Context, email, name string)
+
+var pendingNotifyHook NotifyHook
+
+// SetPendingNotifyHook — main.go에서 1회 호출.
+func SetPendingNotifyHook(h NotifyHook) { pendingNotifyHook = h }
+
+// FirePendingHook — handler 내부에서 SavePending 직후 호출.
+func FirePendingHook(ctx context.Context, email, name string) {
+	if pendingNotifyHook != nil {
+		pendingNotifyHook(ctx, email, name)
+	}
+}
+
 // ListPending — 매니저용 — 현재 매칭 대기 사용자 전체.
 //
 // 만료된 키는 자동으로 제외 (Get이 nil이면 index에서도 정리).

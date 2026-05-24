@@ -102,3 +102,29 @@ export interface PatchCellMeta {
   hard_count: number;
   soft_count: number;
 }
+
+// ============================================================
+// Notifications (Phase A)
+// ============================================================
+
+export type NotificationType =
+  | "account_pending_approval"
+  | "swap_request_received"
+  | "swap_b_accepted"
+  | "swap_approved"
+  | "swap_rejected"
+  | "level_changed"
+  | "fixed_pattern_changed"
+  | "nightkeeper_assigned"
+  | "schedule_confirmed";
+
+export interface Notification {
+  id: number;
+  type: NotificationType;
+  title: string;
+  body?: string;
+  link?: string;
+  meta?: Record<string, unknown>;
+  read_at?: string | null;
+  created_at: string;
+}

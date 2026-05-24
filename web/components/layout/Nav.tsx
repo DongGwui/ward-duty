@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import type { Subject } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 function thisMonth() {
   const d = new Date();
@@ -41,6 +42,7 @@ export function Nav() {
                 <Link href="/levels" className="hover:text-blue-600">등급</Link>
                 <Link href="/settings" className="hover:text-blue-600">설정</Link>
                 <Link href="/night-keepers" className="hover:text-blue-600">나이트킵</Link>
+                <Link href="/account-link" className="hover:text-blue-600">계정 연결</Link>
               </>
             )}
             <Link href="/wishes" className="hover:text-blue-600">희망일</Link>
@@ -48,6 +50,7 @@ export function Nav() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {me && <NotificationBell />}
           {me && (
             <>
               <span className="text-sm text-gray-600">{me.em}</span>

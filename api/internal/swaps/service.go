@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"ward-duty-api/internal/auth"
+	"ward-duty-api/internal/notifications"
 	"ward-duty-api/internal/schedules"
 	"ward-duty-api/internal/solver"
 )
@@ -25,6 +26,7 @@ type Service struct {
 	Repo  *Repo
 	Sched *schedules.Service
 	SRepo *schedules.Repo
+	Notif *notifications.Repo
 }
 
 func NewService(pg *pgxpool.Pool, sc *solver.Client) *Service {
@@ -33,7 +35,15 @@ func NewService(pg *pgxpool.Pool, sc *solver.Client) *Service {
 		Repo:  NewRepo(pg),
 		Sched: schedules.NewService(pg, sc),
 		SRepo: schedules.NewRepo(pg),
+		Notif: notifications.NewRepo(pg),
 	}
+}
+
+func (s *Service) notify(ctx context.Context, in notifications.Create) {
+	_ = s.Notif.Insert(ctx, in)
+}
+func (s *Service) notifyAll(ctx context.Context, recipients []int, tpl notifications.Create) {
+	_ = s.Notif.InsertMany(ctx, recipients, tpl)
 }
 
 // Create — requester가 본인 셀 ↔ target 셀 교환 요청.
@@ -48,7 +58,19 @@ func (s *Service) Create(ctx context.Context, sub *auth.Subject, in CreateInput)
 	if _, err := s.SRepo.FindCellByKey(ctx, in.ScheduleID, in.TargetNurseID, in.TargetDate.Time()); err != nil {
 		return nil, &TransitionError{Code: "VALIDATION_ERROR", Msg: "target cell not found"}
 	}
-	return s.Repo.Create(ctx, in, sub.NurseID)
+	sw, err := s.Repo.Create(ctx, in, sub.NurseID)
+	if err != nil {
+		return nil, err
+	}
+	s.notify(ctx, notifications.Create{
+		RecipientNurseID: sw.TargetNurseID,
+		Type:             notifications.TypeSwapRequestReceived,
+		Title:            "근무 교환 요청을 받았습니다",
+		Body:             fmt.Sprintf("%s ↔ %s", sw.RequesterDate.Time().Format("2006-01-02"), sw.TargetDate.Time().Format("2006-01-02")),
+		Link:             "/swaps",
+		Meta:             map[string]any{"swap_id": sw.ID},
+	})
+	return sw, nil
 }
 
 // Accept — target이 수락.
@@ -66,7 +88,27 @@ func (s *Service) Accept(ctx context.Context, sub *auth.Subject, id int) (*SwapR
 	if err := s.Repo.UpdateStatus(ctx, id, StatusBAccepted, nil); err != nil {
 		return nil, err
 	}
-	return s.Repo.Get(ctx, id)
+	out, _ := s.Repo.Get(ctx, id)
+	if out != nil {
+		s.notify(ctx, notifications.Create{
+			RecipientNurseID: out.RequesterNurseID,
+			Type:             notifications.TypeSwapBAccepted,
+			Title:            "상대가 교환 요청을 수락했습니다",
+			Body:             "매니저 승인을 기다리는 중입니다.",
+			Link:             "/swaps",
+			Meta:             map[string]any{"swap_id": out.ID},
+		})
+		if heads, err := s.Notif.HeadNurseIDs(ctx); err == nil {
+			s.notifyAll(ctx, heads, notifications.Create{
+				Type:  notifications.TypeSwapBAccepted,
+				Title: "근무 교환 승인 대기",
+				Body:  "양 당사자가 수락한 교환이 매니저 승인을 기다립니다.",
+				Link:  "/swaps",
+				Meta:  map[string]any{"swap_id": out.ID},
+			})
+		}
+	}
+	return out, nil
 }
 
 // RejectByB — target이 거부.
@@ -84,7 +126,17 @@ func (s *Service) RejectByB(ctx context.Context, sub *auth.Subject, id int, reas
 	if err := s.Repo.UpdateStatus(ctx, id, StatusRejectedByB, reason); err != nil {
 		return nil, err
 	}
-	return s.Repo.Get(ctx, id)
+	out, _ := s.Repo.Get(ctx, id)
+	if out != nil {
+		s.notify(ctx, notifications.Create{
+			RecipientNurseID: out.RequesterNurseID,
+			Type:             notifications.TypeSwapRejected,
+			Title:            "교환 요청이 거부되었습니다 (상대)",
+			Link:             "/swaps",
+			Meta:             map[string]any{"swap_id": out.ID},
+		})
+	}
+	return out, nil
 }
 
 // Approve — head_nurse 승인. TX 안에서 X-03 검증.
@@ -135,6 +187,14 @@ func (s *Service) Approve(ctx context.Context, sub *auth.Subject, id int) (*Swap
 		return nil, vOut, err
 	}
 	out, _ := s.Repo.Get(ctx, id)
+	if out != nil {
+		s.notifyAll(ctx, []int{out.RequesterNurseID, out.TargetNurseID}, notifications.Create{
+			Type:  notifications.TypeSwapApproved,
+			Title: "근무 교환이 승인되었습니다",
+			Link:  "/swaps",
+			Meta:  map[string]any{"swap_id": out.ID},
+		})
+	}
 	return out, vOut, nil
 }
 

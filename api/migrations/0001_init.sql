@@ -163,6 +163,26 @@ COMMENT ON TABLE night_keeper_assignments IS 'K-01~K-05: K-02(3달 연속 금지
 -- ward_settings — single-row 패턴 (id=1만 허용)
 -- ============================================================
 
+-- ============================================================
+-- notifications — 알림 센터 (Phase A)
+-- ============================================================
+
+CREATE TABLE notifications (
+  id                  SERIAL PRIMARY KEY,
+  recipient_nurse_id  INT NOT NULL REFERENCES nurses(id) ON DELETE CASCADE,
+  type                TEXT NOT NULL,
+  title               TEXT NOT NULL,
+  body                TEXT,
+  link                TEXT,
+  meta                JSONB,
+  read_at             TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_notif_recipient_unread ON notifications(recipient_nurse_id, read_at NULLS FIRST, created_at DESC);
+
+COMMENT ON TABLE  notifications IS '알림 센터 — 각 nurse가 받는 이벤트 통지';
+COMMENT ON COLUMN notifications.type IS 'account_pending_approval / swap_request_received / swap_b_accepted / swap_approved / swap_rejected / level_changed / fixed_pattern_changed / nightkeeper_assigned / schedule_confirmed';
+
 CREATE TABLE ward_settings (
   id                                   INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   min_d                                INT NOT NULL DEFAULT 3,

@@ -1,11 +1,29 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch, loginUrl } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginShell />}>
+      <LoginInner />
+    </Suspense>
+  );
+}
+
+function LoginShell() {
+  return (
+    <main className="min-h-screen flex items-center justify-center px-4">
+      <div className="max-w-sm w-full bg-white rounded-xl shadow p-8 text-center text-gray-400 text-sm">
+        불러오는 중…
+      </div>
+    </main>
+  );
+}
+
+function LoginInner() {
   const sp = useSearchParams();
   const pending = sp.get("pending") === "1";
   const pendingEmail = sp.get("email") ?? "";

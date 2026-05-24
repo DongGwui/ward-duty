@@ -19,6 +19,7 @@ import (
 	"ward-duty-api/internal/db"
 	"ward-duty-api/internal/levels"
 	"ward-duty-api/internal/nightkeepers"
+	"ward-duty-api/internal/notifications"
 	"ward-duty-api/internal/nurses"
 	"ward-duty-api/internal/schedules"
 	"ward-duty-api/internal/settings"
@@ -71,6 +72,26 @@ func main() {
 
 	solverCli := solver.NewFromEnv()
 
+	notifRepo := notifications.NewRepo(deps.PG)
+	auth.SetPendingNotifyHook(func(ctx context.Context, email, name string) {
+		heads, err := notifRepo.HeadNurseIDs(ctx)
+		if err != nil {
+			slog.Warn("pending notify: head ids", "err", err)
+			return
+		}
+		display := name
+		if display == "" {
+			display = email
+		}
+		_ = notifRepo.InsertMany(ctx, heads, notifications.Create{
+			Type:  notifications.TypeAccountPendingApproval,
+			Title: "새 계정 연결 요청",
+			Body:  display + " (" + email + ")",
+			Link:  "/account-link",
+			Meta:  map[string]any{"email": email},
+		})
+	})
+
 	authH := auth.New(deps.PG, deps.Redis, oauthCfg)
 	nursesH := nurses.New(deps.PG)
 	levelsH := levels.New(deps.PG)
@@ -79,6 +100,7 @@ func main() {
 	nkH := nightkeepers.New(deps.PG)
 	schedulesH := schedules.New(deps.PG, solverCli)
 	swapsH := swaps.New(deps.PG, solverCli)
+	notifH := notifications.New(deps.PG)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -136,6 +158,13 @@ func main() {
 			p.Post("/swaps", swapsH.Create)
 			p.Patch("/swaps/{id}", swapsH.Patch)
 			p.Post("/swaps/{id}/cancel", swapsH.Cancel)
+
+			// notifications (본인만)
+			p.Get("/notifications", notifH.List)
+			p.Get("/notifications/unread-count", notifH.UnreadCount)
+			p.Post("/notifications/{id}/read", notifH.Read)
+			p.Post("/notifications/read-all", notifH.ReadAll)
+			p.Delete("/notifications/{id}", notifH.Delete)
 
 			// head_nurse only
 			p.Group(func(hh chi.Router) {
