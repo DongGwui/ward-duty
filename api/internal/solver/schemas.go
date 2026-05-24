@@ -37,18 +37,19 @@ type ExperienceLevelIn struct {
 }
 
 type WardSettingsIn struct {
-	MinD                     int `json:"min_d"`
-	MinE                     int `json:"min_e"`
-	MinN                     int `json:"min_n"`
-	MaxConsecutiveN          int `json:"max_consecutive_n"`
-	MinRestAfterN            int `json:"min_rest_after_n"`
-	MaxConsecutiveWorkdays   int `json:"max_consecutive_workdays"`
-	BalanceOffTolerance      int `json:"balance_off_tolerance"`
-	WeightBalanceOff         int `json:"weight_balance_off"`
-	WeightRespectWishes      int `json:"weight_respect_wishes"`
-	WeightWeekendBalance     int `json:"weight_weekend_balance"`
-	WeightSameShiftStreak    int `json:"weight_same_shift_streak"`
-	WeightShortRestPattern   int `json:"weight_short_rest_pattern"`
+	MinD                       int `json:"min_d"`
+	MinE                       int `json:"min_e"`
+	MinN                       int `json:"min_n"`
+	MaxConsecutiveN            int `json:"max_consecutive_n"`
+	MinRestAfterN              int `json:"min_rest_after_n"`
+	MaxConsecutiveWorkdays     int `json:"max_consecutive_workdays"`
+	BalanceOffTolerance        int `json:"balance_off_tolerance"`
+	PreviousMonthLookbackDays  int `json:"previous_month_lookback_days"` // H11 fix
+	WeightBalanceOff           int `json:"weight_balance_off"`
+	WeightRespectWishes        int `json:"weight_respect_wishes"`
+	WeightWeekendBalance       int `json:"weight_weekend_balance"`
+	WeightSameShiftStreak      int `json:"weight_same_shift_streak"`
+	WeightShortRestPattern     int `json:"weight_short_rest_pattern"`
 }
 
 // ----- Input -----

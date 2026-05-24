@@ -114,7 +114,8 @@ def _prev_dates(first_curr: date, lookback: int) -> list[date]:
 
 def build_context(inp: GenerateInput, *, auto_mode: bool = True) -> Ctx:
     dates = _month_dates(inp.year_month)
-    prev_dates = _prev_dates(dates[0], lookback=7)  # ward_settings.previous_month_lookback_days
+    # H11 fix: settings에서 lookback 사용 (이전엔 7일 하드코딩)
+    prev_dates = _prev_dates(dates[0], lookback=inp.ward_settings.previous_month_lookback_days)
     timeline = prev_dates + dates
 
     prev_cell_map = {(c.nurse_id, c.date): c.shift for c in inp.previous_month_last_week_cells}

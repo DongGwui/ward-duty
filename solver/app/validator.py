@@ -37,7 +37,9 @@ def validate(inp: ValidateInput) -> list[Violation]:
     _, days = calendar.monthrange(y, m)
     dates = [date(y, m, d) for d in range(1, days + 1)]
     first = dates[0]
-    prev_dates = [first - timedelta(days=k) for k in range(7, 0, -1)]
+    # H11 fix: settings의 lookback 사용
+    lookback = inp.ward_settings.previous_month_lookback_days
+    prev_dates = [first - timedelta(days=k) for k in range(lookback, 0, -1)]
     timeline = prev_dates + dates
 
     # nurse_id, date -> shift (current + prev 합쳐서)

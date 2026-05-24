@@ -33,18 +33,19 @@ type settingsBundle struct {
 
 func (s *settingsBundle) toSolver() solver.WardSettingsIn {
 	return solver.WardSettingsIn{
-		MinD:                   s.MinD,
-		MinE:                   s.MinE,
-		MinN:                   s.MinN,
-		MaxConsecutiveN:        s.MaxConsecutiveN,
-		MinRestAfterN:          s.MinRestAfterN,
-		MaxConsecutiveWorkdays: s.MaxConsecutiveWorkdays,
-		BalanceOffTolerance:    s.BalanceOffTolerance,
-		WeightBalanceOff:       s.WeightBalanceOff,
-		WeightRespectWishes:    s.WeightRespectWishes,
-		WeightWeekendBalance:   s.WeightWeekendBalance,
-		WeightSameShiftStreak:  s.WeightSameShiftStreak,
-		WeightShortRestPattern: s.WeightShortRestPattern,
+		MinD:                      s.MinD,
+		MinE:                      s.MinE,
+		MinN:                      s.MinN,
+		MaxConsecutiveN:           s.MaxConsecutiveN,
+		MinRestAfterN:             s.MinRestAfterN,
+		MaxConsecutiveWorkdays:    s.MaxConsecutiveWorkdays,
+		BalanceOffTolerance:       s.BalanceOffTolerance,
+		PreviousMonthLookbackDays: s.PreviousMonthLookbackDays, // H11 fix
+		WeightBalanceOff:          s.WeightBalanceOff,
+		WeightRespectWishes:       s.WeightRespectWishes,
+		WeightWeekendBalance:      s.WeightWeekendBalance,
+		WeightSameShiftStreak:     s.WeightSameShiftStreak,
+		WeightShortRestPattern:    s.WeightShortRestPattern,
 	}
 }
 

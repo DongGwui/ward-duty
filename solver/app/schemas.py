@@ -59,6 +59,7 @@ class WardSettingsIn(BaseModel):
     min_rest_after_n: int = 1
     max_consecutive_workdays: int = 5
     balance_off_tolerance: int = 1
+    previous_month_lookback_days: int = 7  # H11 fix: H-10
     weight_balance_off: int = 10
     weight_respect_wishes: int = 8
     weight_weekend_balance: int = 5
