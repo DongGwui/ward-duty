@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	"ward-duty-api/internal/solver"
 	"ward-duty-api/internal/swaps"
 	"ward-duty-api/internal/wishes"
+	"ward-duty-api/pkg/httpx"
 )
 
 func main() {
@@ -52,8 +54,19 @@ func main() {
 
 	oauthCfg, err := auth.LoadOAuthConfig()
 	if err != nil {
-		slog.Error("oauth config", "err", err)
-		os.Exit(1)
+		if auth.IsDevMode() {
+			slog.Warn("oauth config missing — dev-login만 사용 가능", "err", err)
+			oauthCfg = &auth.OAuthConfig{
+				ClientID:     "dev-client",
+				ClientSecret: "dev-secret",
+				RedirectURL:  "http://localhost:8080/api/auth/oauth/google/callback",
+				StateSecret:  []byte("dev-state-secret-not-for-prod"),
+				AdminEmail:   strings.ToLower(strings.TrimSpace(os.Getenv("ADMIN_EMAIL"))),
+			}
+		} else {
+			slog.Error("oauth config", "err", err)
+			os.Exit(1)
+		}
 	}
 
 	solverCli := solver.NewFromEnv()
@@ -71,6 +84,7 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
+	r.Use(httpx.CORS()) // ALLOWED_ORIGINS env로 dev 허용
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Use(middleware.Logger)
 
@@ -84,6 +98,11 @@ func main() {
 			a.Get("/oauth/google/start", authH.Start)
 			a.Get("/oauth/google/callback", authH.Callback)
 			a.Post("/refresh", authH.Refresh)
+			// dev-login: ENV=development일 때만 노출
+			if auth.IsDevMode() {
+				a.Post("/dev-login", authH.DevLogin)
+				slog.Warn("dev-login enabled — DO NOT use ENV=development in production")
+			}
 			// 인증 필요
 			a.Group(func(p chi.Router) {
 				p.Use(auth.RequireAuth)
