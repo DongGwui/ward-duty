@@ -145,6 +145,7 @@ export default function DutyPage() {
                 cells={cells.data}
                 violations={violationsState.list}
                 canEdit={canEdit}
+                currentNurseId={me?.nid}
                 onPatch={(cellId, shift) => {
                   if (!schedule.data) return;
                   patchCell.mutate(

@@ -83,9 +83,13 @@ export default function NightKeepersPage() {
           <tbody>
             {months.map((ym, idx) => {
               const list = monthQueries[idx].data ?? [];
+              const meAssigned = list.some((a) => a.nurse_id === me?.nid);
               return (
-                <tr key={ym} className="border-t">
-                  <td className="px-3 py-2 font-mono">{ym}</td>
+                <tr key={ym} className={meAssigned ? "border-t bg-blue-50/50" : "border-t"}>
+                  <td className="px-3 py-2 font-mono">
+                    {ym}
+                    {meAssigned && <span className="ml-1.5 text-[10px] bg-blue-600 text-white rounded px-1 py-0.5">내 지정</span>}
+                  </td>
                   <td className="px-3 py-2">
                     {list.length === 0 ? (
                       <span className="text-gray-400 text-xs">없음</span>
@@ -93,9 +97,10 @@ export default function NightKeepersPage() {
                       <div className="flex flex-wrap gap-1.5">
                         {list.map((a) => {
                           const n = nurseMap.get(a.nurse_id);
+                          const isMine = a.nurse_id === me?.nid;
                           return (
-                            <Badge key={a.id} variant="info" className="flex items-center gap-1">
-                              <span>🌙 {n?.name ?? `#${a.nurse_id}`}</span>
+                            <Badge key={a.id} variant={isMine ? "info" : "default"} className="flex items-center gap-1">
+                              <span>🌙 {n?.name ?? `#${a.nurse_id}`}{isMine && " (나)"}</span>
                               {isHead && (
                                 <button
                                   className="text-blue-600 hover:text-blue-800 -mr-1 ml-1"

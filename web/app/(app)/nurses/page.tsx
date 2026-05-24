@@ -21,6 +21,7 @@ export default function NursesPage() {
   const qc = useQueryClient();
   const { data: me } = useQuery<Subject>({ queryKey: ["me"], queryFn: () => apiFetch<Subject>("/auth/me") });
   const isHead = me?.rl === "head_nurse";
+  const myId = me?.nid;
   const nurses = useQuery<Nurse[]>({
     queryKey: ["nurses", { include_inactive: true }],
     queryFn: () => apiFetch<Nurse[]>("/nurses", { search: { include_inactive: 1 } }),
@@ -63,9 +64,14 @@ export default function NursesPage() {
             </tr>
           </thead>
           <tbody>
-            {nurses.data?.map((n) => (
-              <tr key={n.id} className="border-t hover:bg-gray-50">
-                <td className="px-3 py-2 font-medium">{n.name}</td>
+            {nurses.data?.map((n) => {
+              const isMe = n.id === myId;
+              return (
+              <tr key={n.id} className={isMe ? "border-t bg-blue-50/70 hover:bg-blue-50" : "border-t hover:bg-gray-50"}>
+                <td className="px-3 py-2 font-medium">
+                  {n.name}
+                  {isMe && <span className="ml-1.5 text-[10px] bg-blue-600 text-white rounded px-1 py-0.5">나</span>}
+                </td>
                 <td className="px-3 py-2 text-gray-600">{n.email}</td>
                 <td className="px-3 py-2">
                   {n.role === "head_nurse" ? <Badge variant="info">수간호사</Badge> : "팀원"}
@@ -83,7 +89,8 @@ export default function NursesPage() {
                   </td>
                 )}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

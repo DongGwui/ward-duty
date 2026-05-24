@@ -13,6 +13,8 @@ interface Props {
   violations: Violation[];
   canEdit: boolean;
   onPatch: (cellId: number, shift: ShiftCode) => void;
+  /** 본인 nurse_id — 해당 행을 강조 */
+  currentNurseId?: number;
 }
 
 function daysInMonth(ym: string): number {
@@ -24,7 +26,7 @@ function dateStr(ym: string, day: number): string {
   return `${ym}-${String(day).padStart(2, "0")}`;
 }
 
-export function SchedulerGrid({ yearMonth, nurses, cells, violations, canEdit, onPatch }: Props) {
+export function SchedulerGrid({ yearMonth, nurses, cells, violations, canEdit, onPatch, currentNurseId }: Props) {
   const [picker, setPicker] = useState<{ cell: ScheduleCell; nurse: Nurse } | null>(null);
   const days = daysInMonth(yearMonth);
 
@@ -75,10 +77,25 @@ export function SchedulerGrid({ yearMonth, nurses, cells, violations, canEdit, o
             </tr>
           </thead>
           <tbody>
-            {nurses.map((n) => (
-              <tr key={n.id} className="hover:bg-gray-50/60">
-                <td className="sticky left-0 z-10 bg-white border-b px-2 py-1">
-                  <div className="font-medium truncate">{n.name}</div>
+            {nurses.map((n) => {
+              const isMe = currentNurseId === n.id;
+              return (
+              <tr
+                key={n.id}
+                className={clsx(
+                  isMe ? "bg-blue-50/70 hover:bg-blue-50" : "hover:bg-gray-50/60",
+                )}
+              >
+                <td
+                  className={clsx(
+                    "sticky left-0 z-10 border-b px-2 py-1",
+                    isMe ? "bg-blue-50/70" : "bg-white",
+                  )}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium truncate">{n.name}</span>
+                    {isMe && <span className="text-[10px] bg-blue-600 text-white rounded px-1 py-0.5">나</span>}
+                  </div>
                   <div className="text-[10px] text-gray-500">
                     {n.resolved_level ?? ""}
                     {n.fixed_shift_pattern ? ` · ${n.fixed_shift_pattern}` : ""}
@@ -128,7 +145,8 @@ export function SchedulerGrid({ yearMonth, nurses, cells, violations, canEdit, o
                   );
                 })}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
