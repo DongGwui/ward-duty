@@ -34,7 +34,7 @@ export interface Nurse {
   id: number;
   name: string;
   role: "head_nurse" | "nurse";
-  email: string;
+  email?: string | null;             // Stage 1: nullable (계정 없이 명단만 추가 가능)
   hire_date?: string | null;
   experience_level_override?: string | null;
   fixed_shift_pattern?: FixedPattern | null;

@@ -101,7 +101,13 @@ export default function NursesPage() {
                   {n.name}
                   {isMe && <span className="ml-1.5 text-[10px] bg-blue-600 text-white rounded px-1 py-0.5">나</span>}
                 </td>
-                <td className="px-3 py-2 text-gray-600">{n.email}</td>
+                <td className="px-3 py-2 text-gray-600">
+                  {n.email ? (
+                    n.email
+                  ) : (
+                    <span className="text-xs text-gray-400 italic">계정 미연결</span>
+                  )}
+                </td>
                 <td className="px-3 py-2">
                   {n.role === "head_nurse" ? <Badge variant="info">수간호사</Badge> : "팀원"}
                 </td>
@@ -225,9 +231,22 @@ function NurseEditor({ nurse, levels, onClose, onSubmit, submitting }: {
         <Field label="이름">
           <input className="input" value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={!isNew && false} />
         </Field>
-        <Field label="이메일 (Google 화이트리스트)">
-          <input className="input" type="email" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} disabled={!isNew} />
-          {!isNew && <p className="text-xs text-gray-500 mt-1">이메일은 수정 불가 — 신규 추가로 처리하세요.</p>}
+        <Field label="이메일 (선택)">
+          <input
+            className="input"
+            type="email"
+            value={form.email ?? ""}
+            placeholder="비워두면 계정 없이 명단만 추가"
+            onChange={(e) => setForm({ ...form, email: e.target.value || null })}
+            disabled={!isNew}
+          />
+          {isNew ? (
+            <p className="text-xs text-gray-500 mt-1">
+              비워두면 듀티 명단에만 추가됩니다 (계정 미연결). 이후 Google 로그인 시 수간호사가 매칭해 줍니다.
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500 mt-1">이메일은 수정 불가 — 신규 추가로 처리하세요.</p>
+          )}
         </Field>
         <Field label="역할">
           <select className="input" value={form.role ?? "nurse"} onChange={(e) => setForm({ ...form, role: e.target.value as Nurse["role"] })}>

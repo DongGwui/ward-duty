@@ -48,8 +48,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
-	if in.Name == "" || in.Email == "" {
-		apierr.Write(w, http.StatusBadRequest, apierr.CodeValidation, "name/email required")
+	if in.Name == "" {
+		// Stage 1: email은 옵션 (계정 없이 명단만 추가 가능)
+		apierr.Write(w, http.StatusBadRequest, apierr.CodeValidation, "name required")
 		return
 	}
 	n, err := h.Repo.Create(r.Context(), in)

@@ -60,11 +60,19 @@ func (r *Repo) Create(ctx context.Context, in CreateInput) (*Nurse, error) {
 	if role == "" {
 		role = "nurse"
 	}
+	// Stage 1: email은 옵션. 빈 문자열도 NULL로 처리.
+	var emailParam any
+	if in.Email != nil {
+		normalized := strings.ToLower(strings.TrimSpace(*in.Email))
+		if normalized != "" {
+			emailParam = normalized
+		}
+	}
 	row := r.PG.QueryRow(ctx, `
 		INSERT INTO nurses (name, email, role, hire_date, experience_level_override, fixed_shift_pattern, active)
 		VALUES ($1, $2, $3, $4, $5, $6, TRUE)
 		RETURNING `+selectCols,
-		in.Name, strings.ToLower(strings.TrimSpace(in.Email)), role,
+		in.Name, emailParam, role,
 		in.HireDate, in.ExperienceLevelOverride, in.FixedShiftPattern)
 	var n Nurse
 	if err := scanNurse(row, &n); err != nil {

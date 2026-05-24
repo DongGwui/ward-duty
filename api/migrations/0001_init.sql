@@ -59,9 +59,9 @@ CREATE TABLE nurses (
   id                          SERIAL PRIMARY KEY,
   name                        TEXT NOT NULL,
   role                        nurse_role NOT NULL DEFAULT 'nurse',
-  email                       TEXT NOT NULL UNIQUE,            -- 화이트리스트 키 (FR-10)
+  email                       TEXT UNIQUE,                     -- NULL 허용: 계정 없이 명단만 추가 가능 (Stage 1)
   google_sub                  TEXT UNIQUE,                     -- Google subject ID, 첫 로그인 시 upsert
-  hire_date                   DATE,                            -- G-04 자동 분류 기준
+  hire_date                   DATE,                            -- 참고용 (G-04 v0.5: 자동 분류 미사용)
   experience_level_override   TEXT REFERENCES experience_levels(code),
   fixed_shift_pattern         fixed_pattern,                   -- H-11
   active                      BOOLEAN NOT NULL DEFAULT TRUE,
@@ -69,7 +69,7 @@ CREATE TABLE nurses (
   created_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_nurses_active ON nurses(active);
-COMMENT ON COLUMN nurses.email                     IS 'FR-10: 사전 등록된 이메일만 Google 로그인 허용 (화이트리스트)';
+COMMENT ON COLUMN nurses.email                     IS 'FR-10 (Stage 1): NULL 허용. 계정 연결된 nurse만 값 보유';
 COMMENT ON COLUMN nurses.google_sub                IS 'FR-10: 구글 sub. 첫 로그인 시 upsert. 이메일 변경에도 안정적';
 COMMENT ON COLUMN nurses.experience_level_override IS 'G-04: NULL이면 hire_date 기반 자동 분류';
 COMMENT ON COLUMN nurses.fixed_shift_pattern       IS 'H-11: NULL이면 일반 로테이션. K-05로 night_keeper와 동시 X';
