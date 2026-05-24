@@ -4,7 +4,11 @@
 // solver/app/schemas.py의 Pydantic 모델과 필드명 일치해야 함.
 package solver
 
-import "time"
+import (
+	"time"
+
+	"ward-duty-api/pkg/dateonly"
+)
 
 type NurseIn struct {
 	ID            int     `json:"id"`
@@ -14,15 +18,15 @@ type NurseIn struct {
 }
 
 type WishIn struct {
-	NurseID int       `json:"nurse_id"`
-	Date    time.Time `json:"date"` // YYYY-MM-DD 마샬
-	Type    string    `json:"type"` // off|d|e|n|unavailable
+	NurseID int           `json:"nurse_id"`
+	Date    dateonly.Date `json:"date"` // YYYY-MM-DD (Pydantic date 호환)
+	Type    string        `json:"type"` // off|d|e|n|unavailable
 }
 
 type PrevCellIn struct {
-	NurseID int       `json:"nurse_id"`
-	Date    time.Time `json:"date"`
-	Shift   string    `json:"shift"` // D|E|N|O|DE
+	NurseID int           `json:"nurse_id"`
+	Date    dateonly.Date `json:"date"`
+	Shift   string        `json:"shift"` // D|E|N|O|DE
 }
 
 type ExperienceLevelIn struct {
@@ -65,9 +69,9 @@ type GenerateInput struct {
 }
 
 type CellOut struct {
-	NurseID int       `json:"nurse_id"`
-	Date    time.Time `json:"date"`
-	Shift   string    `json:"shift"`
+	NurseID int           `json:"nurse_id"`
+	Date    dateonly.Date `json:"date"`
+	Shift   string        `json:"shift"`
 }
 
 type ValidateInput struct {
@@ -94,13 +98,16 @@ type GenerateOutput struct {
 }
 
 type Violation struct {
-	RuleID   string     `json:"rule_id"`
-	Severity string     `json:"severity"` // hard|soft
-	Message  string     `json:"message"`
-	CellIDs  []int      `json:"cell_ids,omitempty"`
-	NurseID  *int       `json:"nurse_id,omitempty"`
-	Date     *time.Time `json:"date,omitempty"`
+	RuleID   string         `json:"rule_id"`
+	Severity string         `json:"severity"` // hard|soft
+	Message  string         `json:"message"`
+	CellIDs  []int          `json:"cell_ids,omitempty"`
+	NurseID  *int           `json:"nurse_id,omitempty"`
+	Date     *dateonly.Date `json:"date,omitempty"`
 }
+
+// silence unused
+var _ = time.Time{}
 
 type ValidateOutput struct {
 	Violations []Violation `json:"violations"`

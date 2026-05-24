@@ -1,6 +1,10 @@
 package swaps
 
-import "time"
+import (
+	"time"
+
+	"ward-duty-api/pkg/dateonly"
+)
 
 // Status 상수.
 const (
@@ -13,25 +17,25 @@ const (
 )
 
 type SwapRequest struct {
-	ID                  int       `json:"id"`
-	ScheduleID          int       `json:"schedule_id"`
-	RequesterNurseID    int       `json:"requester_nurse_id"`
-	TargetNurseID       int       `json:"target_nurse_id"`
-	RequesterDate       time.Time `json:"requester_date"`
-	TargetDate          time.Time `json:"target_date"`
-	Status              string    `json:"status"`
-	Reason              *string   `json:"reason,omitempty"`
-	RejectedReason      *string   `json:"rejected_reason,omitempty"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	ID                  int           `json:"id"`
+	ScheduleID          int           `json:"schedule_id"`
+	RequesterNurseID    int           `json:"requester_nurse_id"`
+	TargetNurseID       int           `json:"target_nurse_id"`
+	RequesterDate       dateonly.Date `json:"requester_date"`
+	TargetDate          dateonly.Date `json:"target_date"`
+	Status              string        `json:"status"`
+	Reason              *string       `json:"reason,omitempty"`
+	RejectedReason      *string       `json:"rejected_reason,omitempty"`
+	CreatedAt           time.Time     `json:"created_at"`
+	UpdatedAt           time.Time     `json:"updated_at"`
 }
 
 type CreateInput struct {
-	ScheduleID     int       `json:"schedule_id"`
-	TargetNurseID  int       `json:"target_nurse_id"`
-	RequesterDate  time.Time `json:"requester_date"`
-	TargetDate     time.Time `json:"target_date"`
-	Reason         *string   `json:"reason,omitempty"`
+	ScheduleID     int           `json:"schedule_id"`
+	TargetNurseID  int           `json:"target_nurse_id"`
+	RequesterDate  dateonly.Date `json:"requester_date"`
+	TargetDate     dateonly.Date `json:"target_date"`
+	Reason         *string       `json:"reason,omitempty"`
 }
 
 type PatchInput struct {

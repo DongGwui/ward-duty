@@ -42,10 +42,10 @@ func (s *Service) Create(ctx context.Context, sub *auth.Subject, in CreateInput)
 		return nil, &TransitionError{Code: "VALIDATION_ERROR", Msg: "requester == target"}
 	}
 	// 셀 존재 확인
-	if _, err := s.SRepo.FindCellByKey(ctx, in.ScheduleID, sub.NurseID, in.RequesterDate); err != nil {
+	if _, err := s.SRepo.FindCellByKey(ctx, in.ScheduleID, sub.NurseID, in.RequesterDate.Time()); err != nil {
 		return nil, &TransitionError{Code: "VALIDATION_ERROR", Msg: "requester cell not found"}
 	}
-	if _, err := s.SRepo.FindCellByKey(ctx, in.ScheduleID, in.TargetNurseID, in.TargetDate); err != nil {
+	if _, err := s.SRepo.FindCellByKey(ctx, in.ScheduleID, in.TargetNurseID, in.TargetDate.Time()); err != nil {
 		return nil, &TransitionError{Code: "VALIDATION_ERROR", Msg: "target cell not found"}
 	}
 	return s.Repo.Create(ctx, in, sub.NurseID)
@@ -101,11 +101,11 @@ func (s *Service) Approve(ctx context.Context, sub *auth.Subject, id int) (*Swap
 	}
 
 	// 1) cells 교환 (TX)
-	cellA, err := s.SRepo.FindCellByKey(ctx, sw.ScheduleID, sw.RequesterNurseID, sw.RequesterDate)
+	cellA, err := s.SRepo.FindCellByKey(ctx, sw.ScheduleID, sw.RequesterNurseID, sw.RequesterDate.Time())
 	if err != nil {
 		return nil, nil, err
 	}
-	cellB, err := s.SRepo.FindCellByKey(ctx, sw.ScheduleID, sw.TargetNurseID, sw.TargetDate)
+	cellB, err := s.SRepo.FindCellByKey(ctx, sw.ScheduleID, sw.TargetNurseID, sw.TargetDate.Time())
 	if err != nil {
 		return nil, nil, err
 	}
