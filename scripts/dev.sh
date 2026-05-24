@@ -286,6 +286,25 @@ cmd_purge() {
   warn "data permanently deleted. run 'scripts/dev.sh init' to start over"
 }
 
+cmd_restart() {
+  info "stopping any running services..."
+  pkill -f "next-server" 2>/dev/null || true
+  pkill -f "next dev" 2>/dev/null || true
+  pkill -f "ward-duty.*server" 2>/dev/null || true
+  pkill -f "uvicorn app.main:app" 2>/dev/null || true
+  if [[ -f "$PIDS_FILE" ]]; then
+    while read -r pid; do
+      [[ -n "$pid" ]] && kill "$pid" 2>/dev/null || true
+    done < "$PIDS_FILE"
+    rm -f "$PIDS_FILE"
+  fi
+  sleep 2
+  info "clearing Next.js build cache..."
+  rm -rf "$ROOT/web/.next"
+  ok "ready for clean restart"
+  cmd_up
+}
+
 cmd_help() {
   cat <<EOF
 ward-duty local dev orchestrator
@@ -296,6 +315,7 @@ ward-duty local dev orchestrator
   scripts/dev.sh init      1회 셋업 (.env.local 자동 생성 + DB 마이그)
   scripts/dev.sh reset     DB user data 초기화 (seed 보존)
   scripts/dev.sh purge     컨테이너 완전 삭제 (데이터 영구 손실)
+  scripts/dev.sh restart   모든 서비스 죽이고 .next 캐시 비우고 다시 up (HMR stale 회복용)
   scripts/dev.sh help      이 도움말
 
 Tip:
@@ -304,12 +324,13 @@ EOF
 }
 
 case "${1:-help}" in
-  up)     cmd_up ;;
-  down)   cmd_down ;;
-  status) cmd_status ;;
-  reset)  cmd_reset ;;
-  purge)  cmd_purge ;;
-  init)   cmd_init ;;
+  up)      cmd_up ;;
+  down)    cmd_down ;;
+  status)  cmd_status ;;
+  reset)   cmd_reset ;;
+  purge)   cmd_purge ;;
+  init)    cmd_init ;;
+  restart) cmd_restart ;;
   help|-h|--help) cmd_help ;;
-  *)      err "unknown command: $1"; cmd_help; exit 1 ;;
+  *)       err "unknown command: $1"; cmd_help; exit 1 ;;
 esac
