@@ -1,0 +1,23 @@
+{
+  "year_month": "2026-10",
+  "nurses": [
+    {"id": 1, "level": "L1"},
+    {"id": 2, "level": "L1"},
+    {"id": 3, "level": "L1"}
+  ],
+  "wishes": [],
+  "previous_month_last_week_cells": [],
+  "experience_levels": [
+    {"code": "L1", "min_d": 0, "min_e": 0, "min_n": 0},
+    {"code": "L3", "min_d": 1, "min_e": 1, "min_n": 1}
+  ],
+  "ward_settings": {
+    "min_d": 3, "min_e": 2, "min_n": 2,
+    "max_consecutive_n": 3, "min_rest_after_n": 1,
+    "max_consecutive_workdays": 5,
+    "weight_balance_off": 10, "weight_respect_wishes": 8,
+    "weight_weekend_balance": 5, "weight_same_shift_streak": 3,
+    "weight_short_rest_pattern": 4
+  },
+  "max_time_seconds": 10
+}

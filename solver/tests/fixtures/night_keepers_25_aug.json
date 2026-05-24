@@ -1,0 +1,50 @@
+{
+  "year_month": "2026-08",
+  "nurses": [
+    {"id":  1, "level": "L3"},
+    {"id":  2, "level": "L3"},
+    {"id":  3, "level": "L3"},
+    {"id":  4, "level": "L3", "is_night_keeper": true},
+    {"id":  5, "level": "L3", "is_night_keeper": true},
+    {"id":  6, "level": "L2"},
+    {"id":  7, "level": "L2"},
+    {"id":  8, "level": "L2"},
+    {"id":  9, "level": "L2"},
+    {"id": 10, "level": "L2"},
+    {"id": 11, "level": "L1"},
+    {"id": 12, "level": "L1"},
+    {"id": 13, "level": "L1"},
+    {"id": 14, "level": "L1"},
+    {"id": 15, "level": "L1"},
+    {"id": 16, "level": "L1"},
+    {"id": 17, "level": "L1"},
+    {"id": 18, "level": "L1"},
+    {"id": 19, "level": "L1"},
+    {"id": 20, "level": "L1"},
+    {"id": 21, "level": "L4"},
+    {"id": 22, "level": "L4"},
+    {"id": 23, "level": "L2"},
+    {"id": 24, "level": "L2"},
+    {"id": 25, "level": "L2"}
+  ],
+  "wishes": [
+    {"nurse_id": 1, "date": "2026-08-08", "type": "off"},
+    {"nurse_id": 6, "date": "2026-08-15", "type": "unavailable"}
+  ],
+  "previous_month_last_week_cells": [],
+  "experience_levels": [
+    {"code": "L1", "min_d": 0, "min_e": 0, "min_n": 0},
+    {"code": "L2", "min_d": 0, "min_e": 0, "min_n": 0},
+    {"code": "L3", "min_d": 1, "min_e": 1, "min_n": 0},
+    {"code": "L4", "min_d": 0, "min_e": 0, "min_n": 0}
+  ],
+  "ward_settings": {
+    "min_d": 3, "min_e": 2, "min_n": 2,
+    "max_consecutive_n": 3, "min_rest_after_n": 1,
+    "max_consecutive_workdays": 5,
+    "weight_balance_off": 10, "weight_respect_wishes": 8,
+    "weight_weekend_balance": 5, "weight_same_shift_streak": 3,
+    "weight_short_rest_pattern": 4
+  },
+  "max_time_seconds": 45
+}

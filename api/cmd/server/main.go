@@ -1,0 +1,170 @@
+// ward-duty-api 진입점.
+// Design Ref: §9.1
+package main
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
+	"ward-duty-api/internal/auth"
+	"ward-duty-api/internal/db"
+	"ward-duty-api/internal/levels"
+	"ward-duty-api/internal/nightkeepers"
+	"ward-duty-api/internal/nurses"
+	"ward-duty-api/internal/schedules"
+	"ward-duty-api/internal/settings"
+	"ward-duty-api/internal/solver"
+	"ward-duty-api/internal/swaps"
+	"ward-duty-api/internal/wishes"
+)
+
+func main() {
+	logLevel := slog.LevelInfo
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		logLevel = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	deps, err := db.Connect(ctx)
+	if err != nil {
+		slog.Error("db connect", "err", err)
+		os.Exit(1)
+	}
+	defer deps.Close()
+
+	if os.Getenv("SKIP_MIGRATE") != "1" {
+		if err := db.MigrateUp(ctx, deps); err != nil {
+			slog.Warn("migrate skipped or failed", "err", err)
+			// 운영에선 SQL을 수동으로 적용했을 수도. 치명적이지 않음.
+		}
+	}
+
+	oauthCfg, err := auth.LoadOAuthConfig()
+	if err != nil {
+		slog.Error("oauth config", "err", err)
+		os.Exit(1)
+	}
+
+	solverCli := solver.NewFromEnv()
+
+	authH := auth.New(deps.PG, deps.Redis, oauthCfg)
+	nursesH := nurses.New(deps.PG)
+	levelsH := levels.New(deps.PG)
+	settingsH := settings.New(deps.PG)
+	wishesH := wishes.New(deps.PG)
+	nkH := nightkeepers.New(deps.PG)
+	schedulesH := schedules.New(deps.PG, solverCli)
+	swapsH := swaps.New(deps.PG, solverCli)
+
+	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(middleware.Logger)
+
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
+
+	r.Route("/api", func(api chi.Router) {
+		api.Route("/auth", func(a chi.Router) {
+			a.Get("/oauth/google/start", authH.Start)
+			a.Get("/oauth/google/callback", authH.Callback)
+			a.Post("/refresh", authH.Refresh)
+			// 인증 필요
+			a.Group(func(p chi.Router) {
+				p.Use(auth.RequireAuth)
+				p.Get("/me", authH.Me)
+				p.Post("/logout", authH.Logout)
+			})
+		})
+
+		api.Group(func(p chi.Router) {
+			p.Use(auth.RequireAuth)
+
+			// 모두 접근 (RBAC은 핸들러 내부에서 본인 필터)
+			p.Get("/nurses", nursesH.List)
+			p.Get("/levels", levelsH.List)
+			p.Get("/settings", settingsH.Get)
+
+			// wishes: nurse 본인 / head_nurse 전체
+			p.Get("/wishes", wishesH.List)
+			p.Put("/wishes/{date}", wishesH.Upsert)
+			p.Delete("/wishes/{date}", wishesH.Delete)
+
+			// schedules
+			p.Get("/schedules", schedulesH.GetByYM)
+			p.Get("/schedules/{id}/cells", schedulesH.ListCells)
+
+			// night-keepers
+			p.Get("/night-keepers", nkH.List)
+
+			// swaps
+			p.Get("/swaps", swapsH.List)
+			p.Post("/swaps", swapsH.Create)
+			p.Patch("/swaps/{id}", swapsH.Patch)
+			p.Post("/swaps/{id}/cancel", swapsH.Cancel)
+
+			// head_nurse only
+			p.Group(func(hh chi.Router) {
+				hh.Use(auth.RequireRole("head_nurse"))
+				hh.Post("/nurses", nursesH.Create)
+				hh.Patch("/nurses/{id}", nursesH.Update)
+
+				hh.Post("/levels", levelsH.Create)
+				hh.Patch("/levels/{code}", levelsH.Update)
+				hh.Delete("/levels/{code}", levelsH.Delete)
+
+				hh.Patch("/settings", settingsH.Update)
+
+				hh.Post("/schedules", schedulesH.Create)
+				hh.Patch("/schedules/{id}/cells/{cellId}", schedulesH.PatchCell)
+				hh.Post("/schedules/{id}/confirm", schedulesH.Confirm)
+				hh.Post("/schedules/{id}/reset", schedulesH.Reset) // C5 보조
+
+				hh.Post("/night-keepers", nkH.Create)
+				hh.Delete("/night-keepers/{id}", nkH.Delete)
+			})
+		})
+	})
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	srv := &http.Server{
+		Addr:              ":" + port,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	// graceful shutdown
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		slog.Info("listening", "addr", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("listen", "err", err)
+			cancel()
+		}
+	}()
+
+	<-sigCh
+	slog.Info("shutting down...")
+	shutdownCtx, cancel2 := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel2()
+	_ = srv.Shutdown(shutdownCtx)
+}

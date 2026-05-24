@@ -1,0 +1,102 @@
+# Design Ref: §2.1 Component Diagram, §9 Vertical Slices
+# 홈서버 컨벤션: 51.01 인프라 레퍼런스 §5
+
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME}-web
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NODE_ENV=production
+    depends_on:
+      - api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${PROJECT_NAME}-web.rule=Host(`${PROJECT_NAME}.dltmxm.link`)"
+      - "traefik.http.routers.${PROJECT_NAME}-web.entrypoints=web"
+      - "traefik.http.services.${PROJECT_NAME}-web.loadbalancer.server.port=3000"
+    networks:
+      - proxy
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME}-api
+    restart: unless-stopped
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_SSLMODE=${DB_SSLMODE}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ACCESS_TTL=${JWT_ACCESS_TTL}
+      - JWT_REFRESH_TTL=${JWT_REFRESH_TTL}
+      - SOLVER_URL=${SOLVER_URL}
+      - SOLVER_INTERNAL_TOKEN=${SOLVER_INTERNAL_TOKEN}
+      - SOLVER_TIMEOUT_SECONDS=${SOLVER_TIMEOUT_SECONDS}
+      - LOG_LEVEL=${LOG_LEVEL}
+    depends_on:
+      redis:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      # /api 경로로 분리 (Design §2.1)
+      - "traefik.http.routers.${PROJECT_NAME}-api.rule=Host(`${PROJECT_NAME}.dltmxm.link`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.${PROJECT_NAME}-api.entrypoints=web"
+      - "traefik.http.services.${PROJECT_NAME}-api.loadbalancer.server.port=8080"
+    networks:
+      - proxy
+      - shared
+      - ward-duty-internal
+
+  solver:
+    build:
+      context: ./solver
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME}-solver
+    restart: unless-stopped
+    environment:
+      - SOLVER_INTERNAL_TOKEN=${SOLVER_INTERNAL_TOKEN}
+      - LOG_LEVEL=${LOG_LEVEL}
+    # Traefik 라벨 없음 → 외부 노출 차단 (Design §7 Security)
+    networks:
+      - ward-duty-internal
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: ${PROJECT_NAME}-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - ward-duty-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  proxy:
+    external: true                # Traefik이 관리
+  shared:
+    external: true                # shared-postgres / shared-minio
+  ward-duty-internal:
+    driver: bridge
+
+volumes:
+  redis_data:
