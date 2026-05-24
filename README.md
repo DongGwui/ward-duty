@@ -35,15 +35,18 @@ ward-duty/
 
 ## 개발 흐름 (Session Guide)
 
-| Session | Scope |
-|---|---|
-| ✅ 1 | Plan + Design |
-| ▶️ 2 | `module-1, module-2` (인프라 + 솔버 코어) |
-| 3 | `module-3, module-4` (솔버 API + auth/명단) |
-| 4 | `module-5` (API 도메인) |
-| 5 | `module-6, module-7` (Web 기반 + 듀티 그리드) |
-| 6 | `module-8, module-9` (Web 관리 + 배포) |
-| 7 | Check + Report |
+| Session | Scope | 상태 |
+|---|---|:-:|
+| 1 | Plan + Design | ✅ |
+| 2 | `module-1, module-2` (인프라 + 솔버 코어) | ✅ |
+| 3 | `module-3, module-4` (솔버 API + auth/명단) | ✅ |
+| 4 | `module-5` (API 도메인) | ✅ |
+| 5 | `module-6, module-7` (Web 기반 + 듀티 그리드) | ✅ |
+| 6 | `module-8, module-9` (Web 관리 + 배포 가이드) | ✅ |
+| 7 | Check + Report | ⏳ |
+
+> Checkpoint 1 점검 + Stage A Critical 5건 + H11 수정 완료.
+> 잔여 보안 부채(H2~H12)는 `docs/operations/setup-notes.md` §11 참고.
 
 ## 빠른 실행 (솔버만)
 
@@ -64,6 +67,15 @@ docker compose up -d
 ```
 
 자세한 운영 절차는 [docs/operations/setup-notes.md](docs/operations/setup-notes.md) 참고.
+
+## 운영
+
+종단간 스모크 테스트:
+```bash
+bash scripts/smoke.sh https://ward-duty.dltmxm.link
+```
+
+상세 배포 절차: [docs/operations/setup-notes.md](docs/operations/setup-notes.md)
 
 ## 라이선스
 
