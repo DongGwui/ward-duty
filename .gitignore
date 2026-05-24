@@ -39,3 +39,6 @@ Thumbs.db
 
 # Docker
 *.log
+
+# dev.sh runtime
+.dev/

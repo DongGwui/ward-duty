@@ -106,14 +106,26 @@ ensure_redis() {
 }
 
 ensure_db() {
-  if docker exec "$PG_NAME" psql -U postgres -lqt 2>/dev/null | cut -d'|' -f1 | grep -qw "$DB_NAME"; then
-    info "database $DB_NAME exists"
-  else
+  local db_existed=true
+  if ! docker exec "$PG_NAME" psql -U postgres -lqt 2>/dev/null | cut -d'|' -f1 | grep -qw "$DB_NAME"; then
     info "creating database $DB_NAME..."
     docker exec "$PG_NAME" psql -U postgres -c "CREATE DATABASE $DB_NAME;" >/dev/null
-    docker exec -i "$PG_NAME" psql -U postgres -d "$DB_NAME" < "$ROOT/api/migrations/0001_init.sql" >/dev/null
-    ok "migrations applied"
+    db_existed=false
   fi
+  # 마이그레이션 적용 여부는 nurses 테이블 존재로 판정 (goose 없을 때 보수적 판정)
+  local has_tables
+  has_tables=$(docker exec -i "$PG_NAME" psql -U postgres -d "$DB_NAME" -tAc \
+    "SELECT 1 FROM information_schema.tables WHERE table_name='nurses'")
+  if [[ "$has_tables" == "1" ]]; then
+    if [[ "$db_existed" == "true" ]]; then info "schema already present"; fi
+    return
+  fi
+  info "applying 0001_init.sql (Up section only)..."
+  # goose annotation 기반 -- Down 섹션은 잘라냄 (psql은 goose marker를 모름)
+  sed -n '/-- +goose Up/,/-- +goose Down/p' "$ROOT/api/migrations/0001_init.sql" \
+    | sed '/-- +goose Down/d' \
+    | docker exec -i "$PG_NAME" psql -U postgres -d "$DB_NAME" -v ON_ERROR_STOP=1 >/dev/null
+  ok "migrations applied"
 }
 
 # ----- .env.local 자동 생성 -----
