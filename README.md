@@ -48,15 +48,24 @@ ward-duty/
 > Checkpoint 1 점검 + Stage A Critical 5건 + H11 수정 완료.
 > 잔여 보안 부채(H2~H12)는 `docs/operations/setup-notes.md` §11 참고.
 
-## 빠른 실행 (솔버만)
+## 로컬 빠른 실행 (한 명령어)
+
+```bash
+ADMIN_EMAIL_HINT=me@example.com scripts/dev.sh init   # 1회
+scripts/dev.sh up                                      # 매일
+
+# → http://localhost:3000 → /login 의 DEV LOGIN
+```
+
+상세는 [docs/operations/local-dev.md](docs/operations/local-dev.md).
+
+## 솔버만 빠르게
 
 ```bash
 cd solver
-docker build -t ward-duty-solver .
-docker run --rm -p 8000:8000 ward-duty-solver
-
-# 단위/회귀 테스트
-docker run --rm ward-duty-solver pytest -v
+source .venv/bin/activate
+pytest -q                                  # 24/24
+uvicorn app.main:app --port 8000 --reload
 ```
 
 ## 풀스택 실행 (Module 4 이후)

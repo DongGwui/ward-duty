@@ -1,6 +1,39 @@
 # Local Dev — 맥에서 풀스택 띄우기
 
-> Google OAuth 등록 없이 `dev-login` 모드로 바로 UI 확인. ~10분.
+> Google OAuth 등록 없이 `dev-login` 모드로 바로 UI 확인.
+
+---
+
+## ⚡ 30초 셋업 — `scripts/dev.sh`
+
+```bash
+# 1회 (DB·시크릿 자동 생성)
+ADMIN_EMAIL_HINT=yang_donggwui@cocone.co.jp scripts/dev.sh init
+
+# 매일
+scripts/dev.sh up        # 한 터미널에 prefix 로그
+# → http://localhost:3000 → /login의 ⚙️ DEV LOGIN
+
+# Ctrl+C로 모두 정지
+
+# 기타
+scripts/dev.sh status    # 컨테이너 + 서비스 상태
+scripts/dev.sh down      # 정지 (데이터 보존)
+scripts/dev.sh reset     # user data 초기화 (seed 보존)
+scripts/dev.sh purge     # 컨테이너 완전 삭제
+```
+
+`up` 시 자동 처리:
+- `venv` 없으면 생성 + `pip install`
+- `node_modules` 없으면 `npm install`
+- `local-pg` · `local-redis` 컨테이너 (없으면 생성, 있으면 start)
+- `ward_duty` DB + 마이그레이션 (없으면 적용)
+- `api/.env.local` (없으면 랜덤 시크릿 자동 생성)
+- `web/.env.local` (없으면 `.env.local.example`에서 복사)
+
+---
+
+## 수동 셋업 (아래는 dev.sh가 자동으로 하는 일을 직접 하고 싶을 때)
 
 ---
 
