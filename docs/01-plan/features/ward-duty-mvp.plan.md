@@ -192,7 +192,7 @@ version_project: 0.1.0
 | FR-09 | 듀티표 화면을 PDF/PNG로 내보내기 (클라이언트사이드) | Low | Pending |
 | FR-10 | Google OAuth 로그인 + 팀원별 이메일 화이트리스트 (사전 등록된 이메일만 통과) + JWT(15m) + Refresh(7d, Redis). 첫 head_nurse는 `.env`의 `ADMIN_EMAIL`로 시드 | High | Pending |
 | FR-11 | RBAC: head_nurse는 모든 액션, nurse는 본인 wishes·조회·swap만 | High | Pending |
-| FR-12 | 시니어/저연차 구분 — `nurses.hire_date` 기반 자동계산 또는 명시 플래그 (룰 G-04) | High | Pending |
+| FR-12 | 연차 등급 — head_nurse가 명단 페이지에서 각 간호사에게 직접 부여 (룰 G-04 v0.5). hire_date는 참고용으로만 보존, 자동 분류 미사용 | High | Pending |
 | FR-13 | 고정 시프트 패턴 관리 — head_nurse가 nurses 상세에서 `fixed_shift_pattern` 설정 (룰 H-11) | High | Pending |
 | FR-14 | 나이트킵 월별 지정 관리 — head_nurse가 `night_keeper_assignments` 등록 + K-02/K-04 자동 검증 | High | Pending |
 | FR-15 | 자동 생성 시 이전 달 마지막 주(`previous_month_lookback_days`) cells를 솔버 입력에 자동 포함 (룰 H-10) | High | Pending |

@@ -1,6 +1,12 @@
-// G-04 — 등급 자동 분류 (override 우선).
+// G-04 (v0.5) — head_nurse가 각 간호사에게 직접 등급을 부여.
 //
-// Design Ref: §3.3 G-04
+// 이전 v0.4: hire_date 기반 자동 분류 + override.
+// 변경 사유: 자동 분류는 운영 유연성이 떨어지고 임상 현실(직책·역량 등급)을 반영 못함.
+// 현재 v0.5:
+//   - nurses.experience_level_override 가 유일한 등급 결정자
+//   - hire_date는 참고 정보 (자동 분류 미사용)
+//   - experience_levels.min_months/max_months는 deprecated (스키마는 호환 유지)
+//   - 미지정 nurse는 sort_order가 가장 낮은 등급으로 fallback (솔버 input 안전성)
 package nurses
 
 import (
@@ -9,34 +15,16 @@ import (
 	"ward-duty-api/internal/levels"
 )
 
-// ClassifyLevel — nurse의 등급 코드를 결정.
+// ClassifyLevel — override 우선, 없으면 가장 낮은 등급.
 //
-//   1) experience_level_override가 비어있지 않으면 그대로
-//   2) hire_date가 NULL이면 최저 sort_order 등급
-//   3) hire_date 기반 자동 (sort_order 순회)
-func ClassifyLevel(n *Nurse, ls []levels.Level, today time.Time) string {
+// today 인자는 시그니처 호환을 위해 유지하지만 더 이상 사용하지 않음.
+func ClassifyLevel(n *Nurse, ls []levels.Level, _ time.Time) string {
 	if n.ExperienceLevelOverride != nil && *n.ExperienceLevelOverride != "" {
 		return *n.ExperienceLevelOverride
 	}
 	if len(ls) == 0 {
 		return ""
 	}
-	if n.HireDate == nil {
-		return ls[0].Code
-	}
-	m := monthsBetween(*n.HireDate, today)
-	for _, l := range ls {
-		// max NULL = 무제한
-		if m >= l.MinMonths && (l.MaxMonths == nil || m < *l.MaxMonths) {
-			return l.Code
-		}
-	}
-	return ls[len(ls)-1].Code
-}
-
-func monthsBetween(start, end time.Time) int {
-	if end.Before(start) {
-		return 0
-	}
-	return (end.Year()-start.Year())*12 + (int(end.Month()) - int(start.Month()))
+	// 미지정 → sort_order가 가장 낮은 등급 (loadLevels가 sort_order 오름차순으로 정렬)
+	return ls[0].Code
 }

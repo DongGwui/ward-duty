@@ -79,7 +79,7 @@ export default function NursesPage() {
                 <td className="px-3 py-2 text-gray-600">{n.hire_date ?? "-"}</td>
                 <td className="px-3 py-2">
                   <span className="font-mono text-xs">{n.resolved_level ?? "-"}</span>
-                  {n.experience_level_override && <span className="text-xs text-gray-500 ml-1">(수동)</span>}
+                  {!n.experience_level_override && <span className="text-xs text-gray-400 ml-1">(미지정)</span>}
                 </td>
                 <td className="px-3 py-2 text-xs">{n.fixed_shift_pattern ?? "-"}</td>
                 <td className="px-3 py-2">{n.active ? "✅" : <span className="text-gray-400">비활성</span>}</td>
@@ -142,13 +142,22 @@ function NurseEditor({ nurse, levels, onClose, onSubmit, submitting }: {
             <option value="head_nurse">수간호사</option>
           </select>
         </Field>
-        <Field label="입사일 (G-04 자동 분류 기준)">
+        <Field label="입사일 (참고용)">
           <input className="input" type="date" value={form.hire_date?.slice(0, 10) ?? ""} onChange={(e) => setForm({ ...form, hire_date: e.target.value || null })} />
+          <p className="text-[11px] text-gray-500 mt-1">v0.5: 등급은 입사일로 자동 분류되지 않습니다. 아래에서 직접 지정하세요.</p>
         </Field>
-        <Field label="등급 수동 지정 (override)">
-          <select className="input" value={form.experience_level_override ?? ""} onChange={(e) => setForm({ ...form, experience_level_override: e.target.value || null })}>
-            <option value="">자동 (hire_date 기반)</option>
-            {levels.map((l) => <option key={l.code} value={l.code}>{l.code} · {l.display_name}</option>)}
+        <Field label="연차 등급">
+          <select
+            className="input"
+            value={form.experience_level_override ?? ""}
+            onChange={(e) => setForm({ ...form, experience_level_override: e.target.value || null })}
+          >
+            <option value="">미지정 (가장 낮은 등급으로 처리)</option>
+            {levels.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.code} · {l.display_name}
+              </option>
+            ))}
           </select>
         </Field>
         <Field label="고정 시프트 패턴 (H-11)">

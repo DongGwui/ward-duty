@@ -35,7 +35,13 @@ export default function LevelsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">연차 등급</h1>
-          <p className="text-sm text-gray-600 mt-1">H-12 · S-10 · G-04 — 시프트당 등급별 최소 인원과 배정 가중치를 정의</p>
+          <p className="text-sm text-gray-600 mt-1">
+            H-12 · S-10 · G-04 — 시프트당 등급별 최소 인원과 배정 가중치를 정의합니다.
+            <br />
+            <span className="text-xs text-gray-500">
+              v0.5: min/max 개월은 참고용 — 각 간호사의 등급은 명단 페이지에서 직접 부여합니다.
+            </span>
+          </p>
         </div>
         {isHead && <Button onClick={() => setEditing("new")}>+ 등급 추가</Button>}
       </div>
@@ -46,7 +52,7 @@ export default function LevelsPage() {
             <tr>
               <th className="text-left px-3 py-2">code</th>
               <th className="text-left px-3 py-2">표시명</th>
-              <th className="text-right px-3 py-2">개월(min~max)</th>
+              <th className="text-right px-3 py-2 text-gray-400" title="v0.5: 참고용, 자동 분류 X">개월(참고)</th>
               <th className="text-right px-3 py-2">min_d</th>
               <th className="text-right px-3 py-2">min_e</th>
               <th className="text-right px-3 py-2">min_n</th>

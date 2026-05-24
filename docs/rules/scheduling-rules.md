@@ -44,7 +44,7 @@ related:
 | G-01 | **confirmed** | interview | v0.1→v0.3 | **시프트 enum: `D, E, N, O, DE`** — 시간대 확정 (§7) | v0.3에서 DE 추가 |
 | G-02 | confirmed | interview | v0.1 | 1인 1일 1시프트 (overlap 불가) | hard 함의 |
 | G-03 | pending | inferred | v0.1 | 추가 코드(`Edu`, `V`, `S`, `H`) 운영 여부 | 청취 필요 |
-| **G-04** | **confirmed** | **interview** | **v0.2→v0.3** | **연차 등급 시스템 — 단일 임계값 폐기**. head_nurse가 `experience_levels` 테이블을 자유롭게 정의 (code/display_name/min_months/max_months). 각 간호사의 등급은 `hire_date` 자동 분류 또는 `experience_level_override` 수동 지정. | 신규 테이블 §8 참조 |
+| **G-04** | **confirmed** | **interview** | **v0.2→v0.5** | **연차 등급 시스템 — head_nurse 직접 부여**. `experience_levels` 테이블에서 등급을 정의(code/display_name/min_d/min_e/min_n/weights). 각 간호사의 등급은 명단 페이지에서 `experience_level_override`로 **직접 지정**. v0.5에서 hire_date 자동 분류는 제거 — 운영 유연성·임상 직책 반영 어려움. `hire_date`와 `min_months`/`max_months`는 참고 정보로만 보존. 미지정 nurse는 sort_order가 가장 낮은 등급으로 fallback. | 신규 테이블 §8 참조 |
 | **G-05** | **confirmed** | **interview** | **v0.3→v0.4** | **`DE` 더블 시프트** — D+E 합쳐 07:00~22:00 (15시간). 부득이한 인력 부족 시에만 사용. 솔버 자동 배정 X (H-13 참조). **DE 배정자는 H-04 / H-12의 D 및 E 카운트에 동시 포함**. | 수동 배정 전용 |
 | **G-06** | **confirmed** | **interview** | **v0.4** | **공휴일 별도 처리 없음** — 병동 간호사 근무 형태상 공휴일은 평일과 동일 취급. WEEKDAY_*/WEEKDAY_E 패턴은 토·일만 Off로 간주. `treat_holiday_as_weekend` 같은 설정 키 도입하지 않음. | 솔버·UI 단순화 |
 
@@ -230,17 +230,16 @@ CREATE TABLE experience_levels (
 );
 ```
 
-**자동 분류 로직**:
+**등급 결정 로직 (v0.5 단순화)**:
 ```
-nurse의 등급 = 
-  IF nurse.experience_level_override IS NOT NULL 
-    THEN nurses.experience_level_override
+nurse의 등급 =
+  IF nurse.experience_level_override IS NOT NULL
+    THEN nurse.experience_level_override
   ELSE
-    SELECT code FROM experience_levels
-    WHERE min_months <= months_since(hire_date)
-      AND (max_months IS NULL OR months_since(hire_date) < max_months)
-    ORDER BY sort_order LIMIT 1
+    levels[0].code   -- sort_order 가장 낮은 등급 (안전 fallback)
 ```
+
+> v0.4까지의 hire_date 자동 분류는 제거. min_months/max_months 컬럼은 호환 유지(참고용).
 
 **head_nurse UI 동작**:
 - 등급 추가/삭제/이름 변경
@@ -374,6 +373,7 @@ nurses
 | 2026-05-24 | interview (1차) | H-10, H-11, H-12, K-01~K-04, G-04, S-09→deprecated | 청취 4건 |
 | 2026-05-24 | interview (2차) | G-01·G-04·G-05·H-03·H-06·H-12·H-13·K-03·K-04·S-10 | 청취 7건: ① 등급 사용자 정의 ② 나이트킵 부득이 추가(고연차) ③ cooldown 3달 ④ 시프트 시간대 확정 ⑤ 연속근무 5일·N후 Off 1일 ⑥ N후 Off ≥ 1일 ⑦ DE 더블 시프트 |
 | 2026-05-24 | rule-audit + interview (3차, 점검 후속) | G-05·G-06·H-14·K-05·X-03 + §10 신설 | 점검 결과 8건 중 5건 v0.4 반영: ① DE 카운트 D·E 양쪽 명시 ② 공휴일 별도 처리 없음 ③ DE 직후 D만 금지(Off 강제 아님) ④ fixed_shift_pattern과 night_keeper 동시 지정 차단 ⑤ swap 검증 범위 명시. §10 Infeasibility Policy 잠정안 추가(자동 완화 X). |
+| 2026-05-24 | interview (4차, 운영 피드백) | G-04 단순화 | hire_date 자동 분류 제거 — 직책·역량을 입사일로 매핑하기 어렵다는 운영 의견. head_nurse가 명단에서 직접 등급 부여. min_months/max_months는 참고용으로 호환 보존. |
 
 ---
 
@@ -403,3 +403,4 @@ nurses
 | 0.2 | 2026-05-24 | 1차 청취 반영: H-10/H-11/H-12, G-04, K-NN 4종, fixed_shift_pattern, S-09 deprecated |
 | **0.3** | **2026-05-24** | **2차 청취 반영: G-01 시간대 확정·G-04 다단계 등급 시스템·G-05/H-13 DE 시프트 도입·H-03(=5)·H-06(≥1) confirmed·K-04 cooldown 1→3·K-03 부득이 추가 허용·S-10 등급별 가중치. `experience_levels` 테이블 신설, `seniority_threshold_months` 제거. shift enum 확장.** |
 | **0.4** | **2026-05-24** | **룰 점검 + 보강: H-14(DE 직후 D 금지) confirmed, G-06(공휴일 별도 처리 없음) 신규, G-05에 DE 카운트 명시, K-05(fixed_pattern + night_keeper 동시 차단) 신규, X-03 검증 범위(9개 hard ID) 명시, §10 Infeasibility Policy 잠정안 추가(자동 완화 X·fail+사유 기록). 직접적 모순 없음 확인 — design phase 진입 가능.** |
+| **0.5** | **2026-05-24** | **G-04 단순화: hire_date 자동 분류 제거, head_nurse가 명단 페이지에서 직접 등급 부여. `experience_level_override` 가 유일한 등급 결정자. min_months/max_months/hire_date는 참고용으로 호환 보존. 미지정 nurse는 sort_order 가장 낮은 등급 fallback. 사용자 운영 피드백 반영: 임상 직책·역량 등급을 자동 매핑하기 어려움. ClassifyLevel 함수 단순화, /nurses·/levels UI 라벨 수정.** |
