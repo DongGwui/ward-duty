@@ -39,7 +39,7 @@ export default function LevelsPage() {
             H-12 · S-10 · G-04 — 시프트당 등급별 최소 인원과 배정 가중치를 정의합니다.
             <br />
             <span className="text-xs text-gray-500">
-              v0.5: min/max 개월은 참고용 — 각 간호사의 등급은 명단 페이지에서 직접 부여합니다.
+              v0.5: 각 간호사의 등급은 명단 페이지에서 직접 부여합니다 (자동 분류 X).
             </span>
           </p>
         </div>
@@ -52,7 +52,6 @@ export default function LevelsPage() {
             <tr>
               <th className="text-left px-3 py-2">code</th>
               <th className="text-left px-3 py-2">표시명</th>
-              <th className="text-right px-3 py-2 text-gray-400" title="v0.5: 참고용, 자동 분류 X">개월(참고)</th>
               <th className="text-right px-3 py-2">min_d</th>
               <th className="text-right px-3 py-2">min_e</th>
               <th className="text-right px-3 py-2">min_n</th>
@@ -68,7 +67,6 @@ export default function LevelsPage() {
               <tr key={l.code} className="border-t hover:bg-gray-50">
                 <td className="px-3 py-2 font-mono">{l.code}</td>
                 <td className="px-3 py-2">{l.display_name}</td>
-                <td className="px-3 py-2 text-right text-xs text-gray-600">{l.min_months}~{l.max_months ?? "∞"}</td>
                 <td className="px-3 py-2 text-right">{l.min_d}</td>
                 <td className="px-3 py-2 text-right">{l.min_e}</td>
                 <td className="px-3 py-2 text-right">{l.min_n}</td>
@@ -128,8 +126,6 @@ function LevelEditor({ level, onClose, onSubmit, submitting }: {
       <div className="grid sm:grid-cols-2 gap-3 text-sm">
         <Field label="code (예: L1, SR)"><input className="input" value={form.code ?? ""} onChange={(e) => set("code", e.target.value)} disabled={!isNew} /></Field>
         <Field label="표시명"><input className="input" value={form.display_name ?? ""} onChange={(e) => set("display_name", e.target.value)} /></Field>
-        <Field label="min_months"><input className="input" type="number" value={String(form.min_months ?? 0)} onChange={(e) => num("min_months", e.target.value)} /></Field>
-        <Field label="max_months (빈칸=무제한)"><input className="input" type="number" value={form.max_months === null || form.max_months === undefined ? "" : String(form.max_months)} onChange={(e) => num("max_months", e.target.value)} /></Field>
         <Field label="min_d"><input className="input" type="number" value={String(form.min_d ?? 0)} onChange={(e) => num("min_d", e.target.value)} /></Field>
         <Field label="min_e"><input className="input" type="number" value={String(form.min_e ?? 0)} onChange={(e) => num("min_e", e.target.value)} /></Field>
         <Field label="min_n"><input className="input" type="number" value={String(form.min_n ?? 0)} onChange={(e) => num("min_n", e.target.value)} /></Field>
