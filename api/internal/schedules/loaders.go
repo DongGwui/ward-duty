@@ -183,7 +183,9 @@ func loadWishesForMonth(ctx context.Context, pg *pgxpool.Pool, ym string) ([]sol
 		return nil, err
 	}
 	defer rows.Close()
-	var out []solver.WishIn
+	// nil 슬라이스를 반환하면 JSON marshal 시 `null` 이 되어 solver pydantic
+	// validation에서 "Input should be a valid list" 으로 reject 됨.
+	out := []solver.WishIn{}
 	for rows.Next() {
 		var w solver.WishIn
 		if err := rows.Scan(&w.NurseID, &w.Date, &w.Type); err != nil {
