@@ -45,11 +45,13 @@ CREATE TABLE experience_levels (
 );
 
 -- 초기 시드 (head_nurse가 /levels 화면에서 자유 변경)
+-- v0.6 라벨/구간: 운영 피드백 반영. min_months/max_months는 v0.5에서 deprecated
+-- (가이드 텍스트 용도로만 보존, 자동 분류 안 함).
 INSERT INTO experience_levels (code, display_name, min_months, max_months, min_d, min_e, min_n, sort_order) VALUES
-  ('L1', '신입',    0,   12,   0, 0, 0, 1),
-  ('L2', '주니어', 12,   36,   0, 0, 0, 2),
-  ('L3', '중급',   36,   84,   1, 1, 1, 3),
-  ('L4', '시니어', 84, NULL,   0, 0, 0, 4);
+  ('L1', '신규',     0,    4,   0, 0, 0, 1),
+  ('L2', '저연차',   4,   24,   0, 0, 0, 2),
+  ('L3', '중간연차', 25,  48,   1, 1, 1, 3),
+  ('L4', '고연차',   49, NULL,  0, 0, 0, 4);
 
 -- ============================================================
 -- nurses

@@ -213,7 +213,7 @@ if (has(prev2) && has(prev3)) ||
 CREATE TABLE experience_levels (
   id SERIAL PRIMARY KEY,
   code TEXT NOT NULL UNIQUE,              -- 'L1', 'L2', 'L3' 등 head_nurse 자유 정의
-  display_name TEXT NOT NULL,             -- '신입', '주니어', '시니어' 등
+  display_name TEXT NOT NULL,             -- '신규', '저연차', '중간연차', '고연차' 등
   min_months INT NOT NULL DEFAULT 0,      -- 이 등급의 hire 후 경과 개월 하한
   max_months INT,                         -- 상한 (NULL = 무제한)
   -- 시프트별 필수 인원 (H-12)
@@ -404,3 +404,4 @@ nurses
 | **0.3** | **2026-05-24** | **2차 청취 반영: G-01 시간대 확정·G-04 다단계 등급 시스템·G-05/H-13 DE 시프트 도입·H-03(=5)·H-06(≥1) confirmed·K-04 cooldown 1→3·K-03 부득이 추가 허용·S-10 등급별 가중치. `experience_levels` 테이블 신설, `seniority_threshold_months` 제거. shift enum 확장.** |
 | **0.4** | **2026-05-24** | **룰 점검 + 보강: H-14(DE 직후 D 금지) confirmed, G-06(공휴일 별도 처리 없음) 신규, G-05에 DE 카운트 명시, K-05(fixed_pattern + night_keeper 동시 차단) 신규, X-03 검증 범위(9개 hard ID) 명시, §10 Infeasibility Policy 잠정안 추가(자동 완화 X·fail+사유 기록). 직접적 모순 없음 확인 — design phase 진입 가능.** |
 | **0.5** | **2026-05-24** | **G-04 단순화: hire_date 자동 분류 제거, head_nurse가 명단 페이지에서 직접 등급 부여. `experience_level_override` 가 유일한 등급 결정자. min_months/max_months/hire_date는 참고용으로 호환 보존. 미지정 nurse는 sort_order 가장 낮은 등급 fallback. 사용자 운영 피드백 반영: 임상 직책·역량 등급을 자동 매핑하기 어려움. ClassifyLevel 함수 단순화, /nurses·/levels UI 라벨 수정.** |
+| **0.6** | **2026-05-25** | **등급 시드 라벨·구간 갱신 (사용자 운영 피드백). 신입→신규(0~4개월), 주니어→저연차(4~24), 중급→중간연차(25~48), 시니어→고연차(49+). v0.5에 따라 hire_date 자동 분류는 여전히 미사용 — 새 구간 숫자는 매니저가 등급 부여할 때 참고하는 가이드 텍스트로만 의미. migration 시드(0001_init.sql) + 라이브 DB(PATCH /api/levels) 양쪽 적용.** |
