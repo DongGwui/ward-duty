@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"ward-duty-api/internal/notifications"
 	"ward-duty-api/internal/nurses"
 	"ward-duty-api/internal/solver"
 )
@@ -21,11 +22,15 @@ type Service struct {
 	PG     *pgxpool.Pool
 	Repo   *Repo
 	Solver *solver.Client
+	Notif  *notifications.Repo // Phase B — schedule_confirmed broadcast
 }
 
 func NewService(pg *pgxpool.Pool, sc *solver.Client) *Service {
 	return &Service{PG: pg, Repo: NewRepo(pg), Solver: sc}
 }
+
+// WithNotif — main.go에서 주입. nil이면 broadcast 안 함.
+func (s *Service) WithNotif(n *notifications.Repo) *Service { s.Notif = n; return s }
 
 // Generate — POST /api/schedules dispatch.
 //
@@ -286,7 +291,27 @@ func (s *Service) Confirm(ctx context.Context, scheduleID int) error {
 	if v.HardCount > 0 {
 		return &HardViolationsError{Violations: v.Violations, HardCount: v.HardCount}
 	}
-	return s.Repo.UpdateStatusConfirmed(ctx, scheduleID)
+	if err := s.Repo.UpdateStatusConfirmed(ctx, scheduleID); err != nil {
+		return err
+	}
+	// 확정 broadcast — 모든 active nurse에게.
+	if s.Notif != nil {
+		ids, err := s.Notif.ActiveNurseIDs(ctx)
+		if err != nil {
+			slog.Warn("schedule_confirmed: list active", "err", err)
+			return nil
+		}
+		if err := s.Notif.InsertMany(ctx, ids, notifications.Create{
+			Type:  notifications.TypeScheduleConfirmed,
+			Title: sch.YearMonth + " 듀티가 확정되었습니다",
+			Body:  "이번 달 근무표를 확인해 주세요.",
+			Link:  "/duty/" + sch.YearMonth,
+			Meta:  map[string]any{"schedule_id": scheduleID, "year_month": sch.YearMonth},
+		}); err != nil {
+			slog.Warn("schedule_confirmed: insert many", "err", err)
+		}
+	}
+	return nil
 }
 
 var (

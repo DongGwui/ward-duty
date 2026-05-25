@@ -93,12 +93,13 @@ func main() {
 	})
 
 	authH := auth.New(deps.PG, deps.Redis, oauthCfg)
-	nursesH := nurses.New(deps.PG)
+	nursesH := nurses.New(deps.PG).WithNotif(notifRepo)
 	levelsH := levels.New(deps.PG)
 	settingsH := settings.New(deps.PG)
 	wishesH := wishes.New(deps.PG)
-	nkH := nightkeepers.New(deps.PG)
+	nkH := nightkeepers.New(deps.PG).WithNotif(notifRepo)
 	schedulesH := schedules.New(deps.PG, solverCli)
+	schedulesH.Svc.WithNotif(notifRepo)
 	swapsH := swaps.New(deps.PG, solverCli)
 	notifH := notifications.New(deps.PG)
 

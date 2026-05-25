@@ -10,18 +10,23 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"ward-duty-api/internal/levels"
+	"ward-duty-api/internal/notifications"
 	"ward-duty-api/pkg/apierr"
 	"ward-duty-api/pkg/httpx"
 )
 
 type Handler struct {
-	Repo     *Repo
+	Repo      *Repo
 	LevelRepo *levels.Repo
+	Notif     *notifications.Repo // Phase B — level_changed / fixed_pattern_changed 트리거
 }
 
 func New(pg *pgxpool.Pool) *Handler {
 	return &Handler{Repo: NewRepo(pg), LevelRepo: levels.NewRepo(pg)}
 }
+
+// WithNotif — main.go에서 주입. nil이면 알림 발사 안 함.
+func (h *Handler) WithNotif(n *notifications.Repo) *Handler { h.Notif = n; return h }
 
 // GET /api/nurses?include_inactive=1
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +77,8 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	if !httpx.DecodeJSON(w, r, &in) {
 		return
 	}
+	// 알림 발송용으로 변경 전 상태 스냅샷 (실패해도 Update 진행).
+	before, _ := h.Repo.Get(r.Context(), id)
 	n, err := h.Repo.Update(r.Context(), id, in)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
@@ -81,5 +88,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		apierr.Write(w, http.StatusInternalServerError, apierr.CodeInternal, err.Error())
 		return
 	}
+	notifyChanges(r.Context(), h.Notif, before, n)
 	httpx.JSON(w, http.StatusOK, n)
 }

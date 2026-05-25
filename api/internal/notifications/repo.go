@@ -141,7 +141,16 @@ func (r *Repo) InsertMany(ctx context.Context, recipients []int, template Create
 
 // HeadNurseIDs — pending/swap-approval 등에서 매니저 일괄 통지용.
 func (r *Repo) HeadNurseIDs(ctx context.Context) ([]int, error) {
-	rows, err := r.PG.Query(ctx, `SELECT id FROM nurses WHERE role = 'head_nurse' AND active = TRUE`)
+	return r.queryIDs(ctx, `SELECT id FROM nurses WHERE role = 'head_nurse' AND active = TRUE`)
+}
+
+// ActiveNurseIDs — schedule_confirmed 같은 전체 broadcast 용.
+func (r *Repo) ActiveNurseIDs(ctx context.Context) ([]int, error) {
+	return r.queryIDs(ctx, `SELECT id FROM nurses WHERE active = TRUE`)
+}
+
+func (r *Repo) queryIDs(ctx context.Context, q string) ([]int, error) {
+	rows, err := r.PG.Query(ctx, q)
 	if err != nil {
 		return nil, err
 	}

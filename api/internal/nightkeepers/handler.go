@@ -2,6 +2,7 @@ package nightkeepers
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -9,13 +10,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"ward-duty-api/internal/auth"
+	"ward-duty-api/internal/notifications"
 	"ward-duty-api/pkg/apierr"
 	"ward-duty-api/pkg/httpx"
 )
 
-type Handler struct{ Repo *Repo }
+type Handler struct {
+	Repo  *Repo
+	Notif *notifications.Repo // Phase B — nightkeeper_assigned 트리거
+}
 
 func New(pg *pgxpool.Pool) *Handler { return &Handler{Repo: NewRepo(pg)} }
+
+func (h *Handler) WithNotif(n *notifications.Repo) *Handler { h.Notif = n; return h }
 
 // GET /api/night-keepers?ym=YYYY-MM
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +80,18 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		apierr.Write(w, http.StatusInternalServerError, apierr.CodeInternal, err.Error())
 		return
+	}
+	if h.Notif != nil {
+		if err := h.Notif.Insert(r.Context(), notifications.Create{
+			RecipientNurseID: in.NurseID,
+			Type:             notifications.TypeNightKeeperAssigned,
+			Title:            in.YearMonth + " 나이트킵으로 지정되었습니다",
+			Body:             "해당 월에는 N(야간) 근무만 배정됩니다.",
+			Link:             "/night-keepers",
+			Meta:             map[string]any{"year_month": in.YearMonth},
+		}); err != nil {
+			slog.Warn("notify nightkeeper_assigned", "err", err, "nurse_id", in.NurseID)
+		}
 	}
 	httpx.JSON(w, http.StatusCreated, a)
 }
